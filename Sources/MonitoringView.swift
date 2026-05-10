@@ -7,7 +7,9 @@ struct MonitoringView: View {
     @State private var memoryHistory: [Double] = []
     @State private var diskHistory: [Double] = []
     @State private var timestamps: [String] = []
-    
+    // Stored so it can be invalidated on disappear — fixes the memory leak
+    @State private var historyTimer: Timer?
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -18,13 +20,11 @@ struct MonitoringView: View {
                         value: monitoringManager.systemStats.cpuUsage,
                         color: .blue
                     )
-                    
                     StatGauge(
                         title: "Memory",
                         value: monitoringManager.systemStats.memoryUsage,
                         color: .orange
                     )
-                    
                     StatGauge(
                         title: "Disk",
                         value: monitoringManager.systemStats.diskUsage,
@@ -32,12 +32,11 @@ struct MonitoringView: View {
                     )
                 }
                 .padding()
-                
+
                 // CPU Chart
                 VStack(alignment: .leading, spacing: 12) {
                     Text("CPU Usage Over Time")
                         .font(.headline)
-                    
                     Chart {
                         ForEach(Array(cpuHistory.enumerated()), id: \.offset) { index, value in
                             LineMark(
@@ -48,20 +47,17 @@ struct MonitoringView: View {
                         }
                     }
                     .frame(height: 200)
-                    .chartYAxis {
-                        AxisMarks(position: .leading)
-                    }
+                    .chartYAxis { AxisMarks(position: .leading) }
                 }
                 .padding()
                 .background(Color(.controlBackgroundColor))
                 .cornerRadius(8)
                 .padding(.horizontal)
-                
+
                 // Memory Chart
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Memory Usage Over Time")
                         .font(.headline)
-                    
                     Chart {
                         ForEach(Array(memoryHistory.enumerated()), id: \.offset) { index, value in
                             LineMark(
@@ -72,21 +68,18 @@ struct MonitoringView: View {
                         }
                     }
                     .frame(height: 200)
-                    .chartYAxis {
-                        AxisMarks(position: .leading)
-                    }
+                    .chartYAxis { AxisMarks(position: .leading) }
                 }
                 .padding()
                 .background(Color(.controlBackgroundColor))
                 .cornerRadius(8)
                 .padding(.horizontal)
-                
+
                 // System Information
                 VStack(alignment: .leading, spacing: 12) {
                     Text("System Information")
                         .font(.headline)
                         .padding(.horizontal)
-                    
                     VStack(spacing: 8) {
                         MonitoringInfoRow(label: "Processor Cores", value: "\(ProcessInfo.processInfo.activeProcessorCount)")
                         MonitoringInfoRow(label: "Total Memory", value: formatBytes(ProcessInfo.processInfo.physicalMemory))
@@ -98,7 +91,7 @@ struct MonitoringView: View {
                 .background(Color(.controlBackgroundColor))
                 .cornerRadius(8)
                 .padding(.horizontal)
-                
+
                 Spacer()
             }
             .padding(.vertical)
@@ -106,15 +99,20 @@ struct MonitoringView: View {
         .onAppear {
             startHistoryCollection()
         }
+        .onDisappear {
+            // Properly stop the timer when the view leaves the hierarchy
+            historyTimer?.invalidate()
+            historyTimer = nil
+        }
     }
-    
+
     private func startHistoryCollection() {
-        Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
+        guard historyTimer == nil else { return }   // prevent double-start
+        historyTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
             cpuHistory.append(monitoringManager.systemStats.cpuUsage)
             memoryHistory.append(monitoringManager.systemStats.memoryUsage)
             diskHistory.append(monitoringManager.systemStats.diskUsage)
             timestamps.append(Date().formatted(date: .omitted, time: .shortened))
-            
             // Keep only last 30 data points
             if cpuHistory.count > 30 {
                 cpuHistory.removeFirst()

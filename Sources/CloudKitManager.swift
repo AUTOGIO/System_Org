@@ -70,7 +70,7 @@ class CloudKitManager: NSObject, ObservableObject {
                 case .couldNotDetermine:
                     self?.syncStatus = "Could not determine CloudKit status"
                 case .temporarilyUnavailable:
-                    <#code#>
+                    self?.syncStatus = "iCloud Temporarily Unavailable"
                 @unknown default:
                     self?.syncStatus = "Unknown CloudKit status"
                 }

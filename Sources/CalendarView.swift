@@ -79,10 +79,17 @@ struct CalendarView: View {
     }
     
     private func requestCalendarAccess() {
-        eventStore.requestAccess(to: .event) { granted, error in
-            if granted {
-                DispatchQueue.main.async {
-                    refreshEvents()
+        // requestFullAccessToEvents is required on macOS 14+ (Sonoma)
+        if #available(macOS 14.0, *) {
+            eventStore.requestFullAccessToEvents { granted, _ in
+                if granted {
+                    DispatchQueue.main.async { refreshEvents() }
+                }
+            }
+        } else {
+            eventStore.requestAccess(to: .event) { granted, _ in
+                if granted {
+                    DispatchQueue.main.async { refreshEvents() }
                 }
             }
         }

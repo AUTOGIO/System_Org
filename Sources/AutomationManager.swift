@@ -1,21 +1,50 @@
 import Foundation
 
+// MARK: - AutomationManager
+
 class AutomationManager: NSObject, ObservableObject {
     @Published var automations: [AutomationModel] = []
     @Published var runningAutomations: Set<String> = []
     @Published var automationLogs: [String: [String]] = [:]
-    
-    private var processManager = ProcessManager()
+
+    private let processManager = ProcessManager()
     private var schedulers: [String: Timer] = [:]
-    
+
+    /// Persisted JSON file in Application Support
+    private static var storageURL: URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = appSupport.appendingPathComponent("SystemOrganizer", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("automations.json")
+    }
+
     override init() {
         super.init()
         loadAutomations()
     }
-    
+
+    // MARK: Load / Save
+
     func loadAutomations() {
-        // Load from local storage and CloudKit
-        automations = [
+        if let data = try? Data(contentsOf: Self.storageURL),
+           let decoded = try? JSONDecoder().decode([AutomationModel].self, from: data) {
+            automations = decoded
+        } else {
+            // First-run defaults
+            automations = defaultAutomations()
+            saveAutomations()
+        }
+        setupSchedulers()
+    }
+
+    func saveAutomations() {
+        if let data = try? JSONEncoder().encode(automations) {
+            try? data.write(to: Self.storageURL, options: .atomic)
+        }
+    }
+
+    private func defaultAutomations() -> [AutomationModel] {
+        [
             AutomationModel(
                 id: "calendar_summary",
                 name: "Calendar Summary",
@@ -71,119 +100,161 @@ class AutomationManager: NSObject, ObservableObject {
                 lastRun: nil
             )
         ]
-        
-        setupSchedulers()
     }
-    
+
+    // MARK: Run
+
     func runAutomation(_ automation: AutomationModel) {
         guard !runningAutomations.contains(automation.id) else { return }
-        
         runningAutomations.insert(automation.id)
-        
+
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let result = self?.processManager.executeScript(automation.scriptPath) ?? "Failed to execute"
-            
+
             DispatchQueue.main.async {
                 self?.runningAutomations.remove(automation.id)
                 self?.updateAutomationLog(automation.id, with: result)
-                
-                if var automation = self?.automations.first(where: { $0.id == automation.id }) {
-                    automation.lastRun = Date()
-                    if let index = self?.automations.firstIndex(where: { $0.id == automation.id }) {
-                        self?.automations[index] = automation
-                    }
+                if let index = self?.automations.firstIndex(where: { $0.id == automation.id }) {
+                    self?.automations[index].lastRun = Date()
+                    self?.saveAutomations()
                 }
             }
         }
     }
-    
+
+    // MARK: Toggle
+
     func toggleAutomation(_ automation: AutomationModel) {
-        if let index = automations.firstIndex(where: { $0.id == automation.id }) {
-            automations[index].isEnabled.toggle()
-            
-            if automations[index].isEnabled && automations[index].schedule != "manual" {
-                setupScheduler(for: automations[index])
-            } else {
-                schedulers[automation.id]?.invalidate()
-                schedulers.removeValue(forKey: automation.id)
-            }
+        guard let index = automations.firstIndex(where: { $0.id == automation.id }) else { return }
+        automations[index].isEnabled.toggle()
+        saveAutomations()
+
+        if automations[index].isEnabled && automations[index].schedule != "manual" {
+            setupScheduler(for: automations[index])
+        } else {
+            schedulers[automation.id]?.invalidate()
+            schedulers.removeValue(forKey: automation.id)
         }
     }
-    
+
+    // MARK: Scheduling (fires at the correct wall-clock time, not just "24h from now")
+
     private func setupSchedulers() {
+        schedulers.values.forEach { $0.invalidate() }
+        schedulers.removeAll()
         for automation in automations where automation.isEnabled && automation.schedule != "manual" {
             setupScheduler(for: automation)
         }
     }
-    
+
     private func setupScheduler(for automation: AutomationModel) {
-        let interval = parseScheduleInterval(automation.schedule)
-        
-        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        guard let fireDate = nextFireDate(for: automation.schedule) else { return }
+
+        let delay = fireDate.timeIntervalSinceNow
+        // One-shot timer that reschedules itself after firing
+        let timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             self?.runAutomation(automation)
+            // Reschedule for the next occurrence
+            self?.setupScheduler(for: automation)
         }
-        
         schedulers[automation.id] = timer
     }
-    
-    private func parseScheduleInterval(_ schedule: String) -> TimeInterval {
+
+    /// Returns the next future Date for a given schedule key.
+    private func nextFireDate(for schedule: String) -> Date? {
+        let cal = Calendar.current
+        let now = Date()
+
         switch schedule {
-        case "daily_9am":
-            return 86400 // 24 hours
-        case "daily_6pm":
-            return 86400
-        case "daily_midnight":
-            return 86400
         case "hourly":
-            return 3600
+            return cal.nextDate(after: now, matching: DateComponents(minute: 0), matchingPolicy: .nextTime)
+
+        case "daily_9am":
+            var components = cal.dateComponents([.year, .month, .day], from: now)
+            components.hour = 9; components.minute = 0; components.second = 0
+            let candidate = cal.date(from: components)!
+            return candidate > now ? candidate : cal.date(byAdding: .day, value: 1, to: candidate)
+
+        case "daily_6pm":
+            var components = cal.dateComponents([.year, .month, .day], from: now)
+            components.hour = 18; components.minute = 0; components.second = 0
+            let candidate = cal.date(from: components)!
+            return candidate > now ? candidate : cal.date(byAdding: .day, value: 1, to: candidate)
+
+        case "daily_midnight":
+            var components = cal.dateComponents([.year, .month, .day], from: now)
+            components.hour = 0; components.minute = 0; components.second = 0
+            let candidate = cal.date(byAdding: .day, value: 1, to: cal.date(from: components)!)!
+            return candidate
+
+        case "weekly":
+            return cal.date(byAdding: .weekOfYear, value: 1, to: now)
+
         default:
-            return 3600
+            return nil
         }
     }
-    
+
+    // MARK: Logs
+
     private func updateAutomationLog(_ automationId: String, with message: String) {
         if automationLogs[automationId] == nil {
             automationLogs[automationId] = []
         }
-        
         let timestamp = Date().formatted(date: .abbreviated, time: .standard)
         automationLogs[automationId]?.append("[\(timestamp)] \(message)")
-        
-        // Keep only last 100 logs
-        if automationLogs[automationId]?.count ?? 0 > 100 {
+        // Keep last 100 entries
+        if (automationLogs[automationId]?.count ?? 0) > 100 {
             automationLogs[automationId]?.removeFirst()
         }
     }
-    
+
     deinit {
         schedulers.values.forEach { $0.invalidate() }
     }
 }
 
+// MARK: - ProcessManager
+
 class ProcessManager {
+
+    /// Dispatches to the correct interpreter based on file extension.
     func executeScript(_ scriptPath: String) -> String {
-        let expandedPath = NSString(string: scriptPath).expandingTildeInPath
-        
+        let expandedPath = (scriptPath as NSString)
+            .expandingTildeInPath
+            .replacingOccurrences(of: "$HOME", with: NSHomeDirectory())
+
+        let ext = (expandedPath as NSString).pathExtension.lowercased()
+
+        let (executable, arguments): (String, [String]) = {
+            switch ext {
+            case "applescript", "scpt":
+                return ("/usr/bin/osascript", [expandedPath])
+            case "py":
+                return ("/usr/bin/env", ["python3", expandedPath])
+            case "sh", "bash", "":
+                return ("/bin/bash", [expandedPath])
+            default:
+                return ("/bin/bash", [expandedPath])
+            }
+        }()
+
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = ["-c", expandedPath]
-        
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
-        
+
         do {
             try process.run()
             process.waitUntilExit()
-            
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            if let output = String(data: data, encoding: .utf8) {
-                return output.isEmpty ? "✅ Completed successfully" : output
-            }
+            let output = String(data: data, encoding: .utf8) ?? ""
+            return output.isEmpty ? "✅ Completed successfully" : output
         } catch {
             return "❌ Error: \(error.localizedDescription)"
         }
-        
-        return "❌ Failed to execute script"
     }
 }

@@ -198,24 +198,35 @@ struct RemoteMachineCard: View {
     }
     
     private func executeCommand() {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
-        process.arguments = ["\(machine.username)@\(machine.hostname)", commandText]
-        
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-        
-        do {
-            try process.run()
-            process.waitUntilExit()
-            
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            if let output = String(data: data, encoding: .utf8) {
-                commandOutput = output
+        let cmd = commandText
+        guard !cmd.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        commandOutput = "Running…"
+
+        // Moved off the main thread — process.waitUntilExit() blocks until completion
+        DispatchQueue.global(qos: .userInitiated).async {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
+            process.arguments = [
+                "-o", "ConnectTimeout=10",
+                "-o", "BatchMode=yes",          // no interactive prompts
+                "-p", String(machine.port),
+                "\(machine.username)@\(machine.hostname)",
+                cmd
+            ]
+
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError  = pipe
+
+            do {
+                try process.run()
+                process.waitUntilExit()
+                let data   = pipe.fileHandleForReading.readDataToEndOfFile()
+                let output = String(data: data, encoding: .utf8) ?? "(no output)"
+                DispatchQueue.main.async { commandOutput = output.isEmpty ? "✅ Done" : output }
+            } catch {
+                DispatchQueue.main.async { commandOutput = "❌ \(error.localizedDescription)" }
             }
-        } catch {
-            commandOutput = "Error: \(error.localizedDescription)"
         }
     }
 }

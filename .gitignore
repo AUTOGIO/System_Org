@@ -1,0 +1,42 @@
+# ── macOS ──────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# ── Xcode / SwiftPM ────────────────────────────────────
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# SwiftPM user state (never commit these)
+.swiftpm/xcode/xcuserdata/
+.swiftpm/xcode/package.xcworkspace/xcuserdata/
+
+# ── Build artefacts ────────────────────────────────────
+build/
+*.o
+*.a
+*.app
+*.tar.gz
+*.zip
+
+# ── Secrets / env ──────────────────────────────────────
+.env
+*.pem
+*.key
+Secrets.swift
