@@ -2,286 +2,367 @@ import SwiftUI
 
 struct AutomationsView: View {
     @EnvironmentObject var automationManager: AutomationManager
-    @Binding var showNewSheet: Bool
-    
+
     @State private var selectedCategory: AutomationCategory? = nil
-    @State private var searchText = ""
-    
-    var filteredAutomations: [AutomationModel] {
-        automationManager.automations.filter { automation in
-            let matchesSearch = searchText.isEmpty || automation.name.localizedCaseInsensitiveContains(searchText)
-            let matchesCategory = selectedCategory == nil || automation.category == selectedCategory
-            return matchesSearch && matchesCategory
+    @State private var searchText   = ""
+    @State private var showAddSheet = false
+    @State private var editingAutomation: AutomationModel? = nil
+
+    var filtered: [AutomationModel] {
+        automationManager.automations.filter { a in
+            (searchText.isEmpty || a.name.localizedCaseInsensitiveContains(searchText))
+            && (selectedCategory == nil || a.category == selectedCategory)
         }
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
-            // Search and Filter
-            VStack(spacing: 12) {
+            // ── Toolbar ──────────────────────────────────────────────
+            VStack(spacing: 10) {
                 HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
-                    
-                    TextField("Search automations...", text: $searchText)
-                        .textFieldStyle(.plain)
-                    
-                    if !searchText.isEmpty {
-                        Button(action: { searchText = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary)
+                    HStack {
+                        Image(systemName: "magnifyingglass").foregroundColor(.secondary)
+                        TextField("Search…", text: $searchText).textFieldStyle(.plain)
+                        if !searchText.isEmpty {
+                            Button { searchText = "" } label: {
+                                Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+                            }.buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
+                    .padding(8).background(Color(.controlBackgroundColor)).cornerRadius(6)
+                    Spacer()
+                    Button { showAddSheet = true } label: {
+                        Label("New", systemImage: "plus")
+                    }
+                    .buttonStyle(.borderedProminent).controlSize(.small)
                 }
-                .padding(8)
-                .background(Color(.controlBackgroundColor))
-                .cornerRadius(6)
-                
-                // Category Filter
+
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        FilterButton(
-                            title: "All",
-                            isSelected: selectedCategory == nil
-                        ) {
-                            selectedCategory = nil
-                        }
-                        
-                        ForEach([AutomationCategory.general, .calendar, .desktop, .obsidian, .ssh, .development, .backup], id: \.self) { category in
-                            FilterButton(
-                                title: category.rawValue,
-                                isSelected: selectedCategory == category
-                            ) {
-                                selectedCategory = category
+                    HStack(spacing: 6) {
+                        FilterChip(title: "All", isSelected: selectedCategory == nil) { selectedCategory = nil }
+                        ForEach(AutomationCategory.allCases, id: \.self) { cat in
+                            FilterChip(title: cat.rawValue, isSelected: selectedCategory == cat) {
+                                selectedCategory = cat
                             }
                         }
                     }
                 }
             }
-            .padding()
-            .background(Color(.controlBackgroundColor))
-            
+            .padding().background(Color(.controlBackgroundColor))
             Divider()
-            
-            // Automations List
+
+            // ── List ─────────────────────────────────────────────────
             ScrollView {
-                VStack(spacing: 12) {
-                    ForEach(filteredAutomations) { automation in
-                        AutomationDetailCard(automation: automation)
-                    }
-                    
-                    if filteredAutomations.isEmpty {
-                        VStack(spacing: 12) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 40))
-                                .foregroundColor(.secondary)
-                            Text("No automations found")
-                                .foregroundColor(.secondary)
+                VStack(spacing: 10) {
+                    if filtered.isEmpty {
+                        VStack(spacing: 10) {
+                            Image(systemName: "magnifyingglass").font(.system(size: 36)).foregroundColor(.secondary)
+                            Text("No automations found").foregroundColor(.secondary)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 40)
+                        .frame(maxWidth: .infinity).padding(.vertical, 40)
+                    } else {
+                        ForEach(filtered) { automation in
+                            AutomationDetailCard(automation: automation) {
+                                editingAutomation = automation
+                            }
+                        }
                     }
                 }
                 .padding()
             }
         }
+        .sheet(isPresented: $showAddSheet) {
+            AutomationEditorSheet(mode: .add) { automationManager.addAutomation($0) }
+        }
+        .sheet(item: $editingAutomation) { auto in
+            AutomationEditorSheet(mode: .edit(auto)) { automationManager.updateAutomation($0) }
+        }
     }
 }
 
-struct FilterButton: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
+// MARK: - FilterChip
+
+struct FilterChip: View {
+    let title: String; let isSelected: Bool; let action: () -> Void
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.caption)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+            Text(title).font(.caption)
+                .padding(.horizontal, 12).padding(.vertical, 5)
                 .background(isSelected ? Color.blue : Color(.controlBackgroundColor))
-                .foregroundColor(isSelected ? .white : .primary)
-                .cornerRadius(6)
-        }
-        .buttonStyle(.plain)
+                .foregroundColor(isSelected ? .white : .primary).cornerRadius(6)
+        }.buttonStyle(.plain)
     }
 }
+
+// MARK: - AutomationDetailCard
 
 struct AutomationDetailCard: View {
     @EnvironmentObject var automationManager: AutomationManager
     let automation: AutomationModel
-    
-    @State private var showDetails = false
-    @State private var showLogs = false
-    
+    var onEdit: () -> Void = {}
+
+    @State private var showLogs    = false
+    @State private var showHistory = false
+    @State private var showEditor  = false
+    @State private var editedScript = ""
+
+    var history: [RunRecord] { automationManager.historyFor(automation.id) }
+    var successRate: Double {
+        guard !history.isEmpty else { return 0 }
+        return Double(history.filter { $0.success }.count) / Double(history.count)
+    }
+
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
+            // Main row
             HStack(spacing: 12) {
-                // Enable/Disable Toggle
                 Toggle("", isOn: Binding(
                     get: { automation.isEnabled },
                     set: { _ in automationManager.toggleAutomation(automation) }
-                ))
-                .labelsHidden()
-                
-                // Automation Info
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(automation.name)
-                            .font(.headline)
-                        
+                )).labelsHidden()
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(automation.name).font(.headline)
                         if automationManager.runningAutomations.contains(automation.id) {
-                            HStack(spacing: 4) {
-                                ProgressView()
-                                    .scaleEffect(0.8, anchor: .center)
-                                Text("Running...")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                            }
+                            Label("Running", systemImage: "arrow.triangle.2.circlepath")
+                                .font(.caption2).foregroundColor(.blue)
+                        }
+                        if !history.isEmpty {
+                            Text("\(Int(successRate * 100))%")
+                                .font(.caption2).padding(.horizontal, 5).padding(.vertical, 2)
+                                .background(successRate > 0.8 ? Color.green.opacity(0.2) : Color.orange.opacity(0.2))
+                                .foregroundColor(successRate > 0.8 ? .green : .orange).cornerRadius(4)
                         }
                     }
-                    
-                    Text(automation.description)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    HStack(spacing: 12) {
-                        Label(automation.schedule, systemImage: "clock")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        
+                    Text(automation.description).font(.caption).foregroundColor(.secondary)
+                    HStack(spacing: 8) {
+                        Label(ScheduleOption.displayName(for: automation.schedule), systemImage: "clock")
+                            .font(.caption2).foregroundColor(.secondary)
                         if let lastRun = automation.lastRun {
-                            Label(
-                                lastRun.formatted(date: .abbreviated, time: .shortened),
-                                systemImage: "checkmark.circle"
-                            )
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                            Label(lastRun.formatted(date: .abbreviated, time: .shortened),
+                                  systemImage: "checkmark.circle")
+                                .font(.caption2).foregroundColor(.secondary)
                         }
+                        Text(automation.category.rawValue)
+                            .font(.caption2).padding(.horizontal, 5).padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.1)).cornerRadius(4)
                     }
                 }
-                
                 Spacer()
-                
-                // Action Buttons
-                HStack(spacing: 8) {
-                    Button(action: { automationManager.runAutomation(automation) }) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 12))
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(!automation.isEnabled)
-                    
-                    Button(action: { showLogs.toggle() }) {
-                        Image(systemName: "list.bullet")
-                            .font(.system(size: 12))
-                    }
-                    .buttonStyle(.bordered)
-                    
-                    Button(action: { showDetails.toggle() }) {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 12))
-                    }
-                    .buttonStyle(.bordered)
+
+                HStack(spacing: 6) {
+                    Button { automationManager.runAutomation(automation) } label: {
+                        Image(systemName: "play.fill").font(.system(size: 11))
+                    }.buttonStyle(.bordered).disabled(!automation.isEnabled)
+
+                    Button { showEditor.toggle(); editedScript = automation.scriptContent } label: {
+                        Image(systemName: "pencil").font(.system(size: 11))
+                    }.buttonStyle(.bordered)
+
+                    Button { showLogs.toggle() } label: {
+                        Image(systemName: "list.bullet").font(.system(size: 11))
+                    }.buttonStyle(.bordered)
+
+                    Button { showHistory.toggle() } label: {
+                        Image(systemName: "clock.arrow.circlepath").font(.system(size: 11))
+                    }.buttonStyle(.bordered)
+
+                    Button(action: onEdit) {
+                        Image(systemName: "slider.horizontal.3").font(.system(size: 11))
+                    }.buttonStyle(.bordered)
+
+                    Button(role: .destructive) { automationManager.deleteAutomation(automation) } label: {
+                        Image(systemName: "trash").font(.system(size: 11))
+                    }.buttonStyle(.bordered)
                 }
             }
-            
-            // Logs Section
+            .padding()
+
+            // Script Editor
+            if showEditor {
+                Divider()
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Inline Script").font(.caption).fontWeight(.semibold)
+                        Spacer()
+                        Button("Save") {
+                            var updated = automation
+                            updated.scriptContent = editedScript
+                            automationManager.updateAutomation(updated)
+                            showEditor = false
+                        }.buttonStyle(.borderedProminent).controlSize(.small)
+                        Button("Cancel") { showEditor = false }.buttonStyle(.bordered).controlSize(.small)
+                    }
+                    TextEditor(text: $editedScript)
+                        .font(.system(size: 12, design: .monospaced))
+                        .frame(height: 140)
+                        .border(Color(.separatorColor), width: 1)
+                }
+                .padding()
+            }
+
+            // Logs
             if showLogs {
                 Divider()
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Execution Logs")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                    
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Execution Logs").font(.caption).fontWeight(.semibold)
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(automationManager.automationLogs[automation.id] ?? [], id: \.self) { log in
-                                Text(log)
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(2)
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(automationManager.automationLogs[automation.id] ?? [], id: \.self) {
+                                Text($0).font(.caption2).foregroundColor(.secondary)
                             }
                         }
                     }
-                    .frame(height: 100)
-                    .padding(8)
-                    .background(Color(.controlBackgroundColor))
-                    .cornerRadius(4)
+                    .frame(height: 90).padding(6).background(Color.black.opacity(0.05)).cornerRadius(4)
                 }
+                .padding()
             }
-            
-            // Details Section
-            if showDetails {
+
+            // Run History
+            if showHistory {
                 Divider()
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    DetailRow(label: "Script Path", value: automation.scriptPath)
-                    DetailRow(label: "Category", value: automation.category.rawValue)
-                    
-                    if !automation.tags.isEmpty {
-                        HStack {
-                            Text("Tags")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                            
-                            Spacer()
-                            
-                            HStack(spacing: 4) {
-                                ForEach(automation.tags, id: \.self) { tag in
-                                    Text(tag)
-                                        .font(.caption2)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Color.blue.opacity(0.2))
-                                        .cornerRadius(3)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Run History (\(history.count))").font(.caption).fontWeight(.semibold)
+                        Spacer()
+                        if !history.isEmpty {
+                            let avg = history.map(\.duration).reduce(0,+) / Double(history.count)
+                            Text("Avg \(String(format: "%.1fs", avg))")
+                                .font(.caption2).foregroundColor(.secondary)
+                        }
+                    }
+                    ScrollView {
+                        VStack(spacing: 4) {
+                            ForEach(history.prefix(20)) { record in
+                                HStack(spacing: 8) {
+                                    Image(systemName: record.success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                        .foregroundColor(record.success ? .green : .red).font(.caption)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(record.startedAt.formatted(date: .abbreviated, time: .shortened)).font(.caption2)
+                                        Text(String(record.output.prefix(80))).font(.caption2).foregroundColor(.secondary).lineLimit(1)
+                                    }
+                                    Spacer()
+                                    Text(String(format: "%.1fs", record.duration)).font(.caption2).foregroundColor(.secondary)
                                 }
                             }
                         }
                     }
-                    
-                    if !automation.notes.isEmpty {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Notes")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                            Text(automation.notes)
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
+                    .frame(height: 120).padding(6).background(Color.black.opacity(0.05)).cornerRadius(4)
+                }
+                .padding()
+            }
+        }
+        .background(Color(.controlBackgroundColor)).cornerRadius(8)
+    }
+}
+
+// MARK: - AutomationEditorSheet
+
+enum EditorMode { case add; case edit(AutomationModel) }
+
+struct AutomationEditorSheet: View {
+    let mode: EditorMode
+    var onSave: (AutomationModel) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name: String
+    @State private var description: String
+    @State private var scriptPath: String
+    @State private var schedule: String
+    @State private var category: AutomationCategory
+    @State private var tags: String
+    @State private var notes: String
+    @State private var watchPath: String
+    @State private var isEnabled: Bool
+
+    init(mode: EditorMode, onSave: @escaping (AutomationModel) -> Void) {
+        self.mode = mode; self.onSave = onSave
+        if case .edit(let a) = mode {
+            _name = State(initialValue: a.name); _description = State(initialValue: a.description)
+            _scriptPath = State(initialValue: a.scriptPath); _schedule = State(initialValue: a.schedule)
+            _category = State(initialValue: a.category)
+            _tags = State(initialValue: a.tags.joined(separator: ", "))
+            _notes = State(initialValue: a.notes); _watchPath = State(initialValue: a.watchPath ?? "")
+            _isEnabled = State(initialValue: a.isEnabled)
+        } else {
+            _name = State(initialValue: ""); _description = State(initialValue: "")
+            _scriptPath = State(initialValue: "$HOME/Documents/scripts/")
+            _schedule = State(initialValue: "manual"); _category = State(initialValue: .general)
+            _tags = State(initialValue: ""); _notes = State(initialValue: "")
+            _watchPath = State(initialValue: ""); _isEnabled = State(initialValue: true)
+        }
+    }
+
+    var isEditing: Bool { if case .edit = mode { return true }; return false }
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("Basic Info") {
+                    TextField("Name", text: $name)
+                    TextField("Description", text: $description)
+                    Toggle("Enabled", isOn: $isEnabled)
+                }
+                Section("Script") {
+                    TextField("Script Path", text: $scriptPath)
+                    Picker("Schedule", selection: $schedule) {
+                        ForEach(ScheduleOption.options) { opt in
+                            Text(opt.displayName).tag(opt.id)
                         }
                     }
+                    if schedule == "file_watch" {
+                        TextField("Watch Path (folder or file)", text: $watchPath)
+                    }
+                }
+                Section("Organisation") {
+                    Picker("Category", selection: $category) {
+                        ForEach(AutomationCategory.allCases, id: \.self) { c in
+                            Text(c.rawValue).tag(c)
+                        }
+                    }
+                    TextField("Tags (comma-separated)", text: $tags)
+                }
+                Section("Notes") {
+                    TextEditor(text: $notes).frame(height: 80)
+                }
+            }
+            .navigationTitle(isEditing ? "Edit Automation" : "New Automation")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        var auto: AutomationModel
+                        if case .edit(let a) = mode { auto = a }
+                        else { auto = AutomationModel(id: UUID().uuidString, name: "", description: "",
+                                                       isEnabled: true, scriptPath: "", schedule: "manual") }
+                        auto.name = name; auto.description = description; auto.scriptPath = scriptPath
+                        auto.schedule = schedule; auto.category = category; auto.isEnabled = isEnabled
+                        auto.tags = tags.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                        auto.notes = notes; auto.watchPath = watchPath.isEmpty ? nil : watchPath
+                        onSave(auto); dismiss()
+                    }
+                    .disabled(name.isEmpty || scriptPath.isEmpty)
                 }
             }
         }
-        .padding()
-        .background(Color(.controlBackgroundColor))
-        .cornerRadius(8)
+        .frame(minWidth: 500, minHeight: 480)
     }
 }
 
 struct DetailRow: View {
-    let label: String
-    let value: String
-    
+    let label: String; let value: String
     var body: some View {
         HStack {
-            Text(label)
-                .font(.caption)
-                .fontWeight(.semibold)
-            
+            Text(label).font(.caption).fontWeight(.semibold)
             Spacer()
-            
-            Text(value)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
+            Text(value).font(.caption).foregroundColor(.secondary).lineLimit(1)
         }
     }
 }
 
 #Preview {
-    AutomationsView(showNewSheet: .constant(false))
-        .environmentObject(AutomationManager())
+    AutomationsView().environmentObject(AutomationManager())
 }

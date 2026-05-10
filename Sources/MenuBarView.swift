@@ -3,6 +3,7 @@ import SwiftUI
 struct MenuBarView: View {
     @EnvironmentObject var automationManager: AutomationManager
     @EnvironmentObject var cloudKitManager: CloudKitManager
+    @EnvironmentObject var ollamaManager: OllamaManager
     @EnvironmentObject var monitoringManager: MonitoringManager
     
     var body: some View {

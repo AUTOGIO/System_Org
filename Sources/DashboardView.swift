@@ -3,117 +3,96 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject var automationManager: AutomationManager
     @EnvironmentObject var monitoringManager: MonitoringManager
-    @EnvironmentObject var cloudKitManager: CloudKitManager
-    
+    @EnvironmentObject var cloudKitManager:   CloudKitManager
+    @EnvironmentObject var ollamaManager:     OllamaManager
+    @EnvironmentObject var gitStatusManager:  GitStatusManager
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // System Stats Cards
-                HStack(spacing: 15) {
-                    StatCard(
-                        title: "CPU Usage",
-                        value: String(format: "%.1f%%", monitoringManager.systemStats.cpuUsage),
-                        icon: "cpu",
-                        color: .blue
-                    )
-                    
-                    StatCard(
-                        title: "Memory",
-                        value: String(format: "%.1f%%", monitoringManager.systemStats.memoryUsage),
-                        icon: "memorychip",
-                        color: .orange
-                    )
-                    
-                    StatCard(
-                        title: "Disk",
-                        value: String(format: "%.1f%%", monitoringManager.systemStats.diskUsage),
-                        icon: "internaldrive",
-                        color: .green
-                    )
+
+                // ── System Stats ─────────────────────────────────────
+                HStack(spacing: 14) {
+                    StatCard(title: "CPU",    value: String(format: "%.1f%%", monitoringManager.systemStats.cpuUsage),
+                             icon: "cpu",          color: .blue)
+                    StatCard(title: "Memory", value: String(format: "%.1f%%", monitoringManager.systemStats.memoryUsage),
+                             icon: "memorychip",   color: .orange)
+                    StatCard(title: "Disk",   value: String(format: "%.1f%%", monitoringManager.systemStats.diskUsage),
+                             icon: "internaldrive",color: .green)
+                    StatCard(title: "AI",
+                             value: ollamaManager.isAvailable ? "Online" : "Offline",
+                             icon: "brain.head.profile",
+                             color: ollamaManager.isAvailable ? .purple : .gray)
                 }
-                .padding()
-                
-                // Active Automations
-                VStack(alignment: .leading, spacing: 12) {
+                .padding(.horizontal)
+
+                // ── Active Automations ────────────────────────────────
+                VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text("Active Automations")
+                        Label("Active Automations", systemImage: "gearshape.2")
                             .font(.headline)
                         Spacer()
                         Text("\(automationManager.automations.filter { $0.isEnabled }.count) enabled")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(.caption).foregroundColor(.secondary)
                     }
                     .padding(.horizontal)
-                    
-                    VStack(spacing: 8) {
+
+                    VStack(spacing: 6) {
                         ForEach(automationManager.automations.filter { $0.isEnabled }.prefix(5)) { automation in
                             AutomationRowCard(automation: automation)
                         }
                     }
                     .padding(.horizontal)
                 }
-                
-                // Recent Activity
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Recent Activity")
+
+                // ── Recent Run History ────────────────────────────────
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Recent Activity", systemImage: "clock.arrow.circlepath")
                         .font(.headline)
                         .padding(.horizontal)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(automationManager.automations.filter { $0.lastRun != nil }.sorted { $0.lastRun ?? Date() > $1.lastRun ?? Date() }.prefix(5), id: \.id) { automation in
-                            HStack(spacing: 12) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                                
+
+                    VStack(spacing: 6) {
+                        ForEach(automationManager.runHistory.prefix(5)) { record in
+                            let auto = automationManager.automations.first { $0.id == record.automationId }
+                            HStack(spacing: 10) {
+                                Image(systemName: record.success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundColor(record.success ? .green : .red)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(automation.name)
-                                        .font(.caption)
-                                        .fontWeight(.semibold)
-                                    if let lastRun = automation.lastRun {
-                                        Text(lastRun.formatted(date: .abbreviated, time: .shortened))
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
-                                    }
+                                    Text(auto?.name ?? record.automationId)
+                                        .font(.caption).fontWeight(.semibold)
+                                    Text(record.startedAt.formatted(date: .abbreviated, time: .shortened))
+                                        .font(.caption2).foregroundColor(.secondary)
                                 }
-                                
                                 Spacer()
+                                Text(String(format: "%.1fs", record.duration))
+                                    .font(.caption2).foregroundColor(.secondary)
                             }
-                            .padding(8)
-                            .background(Color(.controlBackgroundColor))
-                            .cornerRadius(6)
+                            .padding(8).background(Color(.controlBackgroundColor)).cornerRadius(6)
                         }
                     }
                     .padding(.horizontal)
                 }
-                
-                // CloudKit Status
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Image(systemName: "icloud.fill")
-                            .foregroundColor(.blue)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("CloudKit Sync")
-                                .font(.headline)
-                            Text(cloudKitManager.syncStatus)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        Button(action: { cloudKitManager.syncData() }) {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 12))
-                        }
-                        .buttonStyle(.bordered)
+
+                // ── Git Status Widget ─────────────────────────────────
+                GitStatusWidget()
+
+                // ── CloudKit Status ───────────────────────────────────
+                HStack(spacing: 12) {
+                    Image(systemName: "icloud.fill").foregroundColor(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("CloudKit Sync").font(.headline)
+                        Text(cloudKitManager.syncStatus).font(.caption).foregroundColor(.secondary)
                     }
-                    .padding()
-                    .background(Color(.controlBackgroundColor))
-                    .cornerRadius(8)
+                    Spacer()
+                    Button { cloudKitManager.syncData() } label: {
+                        Image(systemName: "arrow.clockwise").font(.system(size: 12))
+                    }
+                    .buttonStyle(.bordered)
                 }
+                .padding()
+                .background(Color(.controlBackgroundColor)).cornerRadius(8)
                 .padding(.horizontal)
-                
+
                 Spacer()
             }
             .padding(.vertical)
@@ -121,65 +100,125 @@ struct DashboardView: View {
     }
 }
 
-struct StatCard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-    
+// MARK: - GitStatusWidget
+
+struct GitStatusWidget: View {
+    @EnvironmentObject var gitStatusManager: GitStatusManager
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(color)
-                
+                Label("Git Repos", systemImage: "arrow.triangle.branch")
+                    .font(.headline)
                 Spacer()
+                if gitStatusManager.isRefreshing {
+                    ProgressView().scaleEffect(0.7)
+                } else {
+                    Button { gitStatusManager.refresh() } label: {
+                        Image(systemName: "arrow.clockwise").font(.system(size: 12))
+                    }.buttonStyle(.bordered)
+                }
+                if let last = gitStatusManager.lastRefreshed {
+                    Text(last.formatted(date: .omitted, time: .shortened))
+                        .font(.caption2).foregroundColor(.secondary)
+                }
             }
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text(value)
-                    .font(.title3)
-                    .fontWeight(.bold)
+            .padding(.horizontal)
+
+            if gitStatusManager.repos.isEmpty && !gitStatusManager.isRefreshing {
+                Text("No git repos found in scan paths. Configure paths in Settings → Git Scanner.")
+                    .font(.caption).foregroundColor(.secondary)
+                    .padding(.horizontal)
+            } else {
+                VStack(spacing: 6) {
+                    ForEach(gitStatusManager.repos.prefix(8)) { repo in
+                        GitRepoRow(repo: repo)
+                    }
+                }
+                .padding(.horizontal)
             }
         }
-        .padding()
-        .background(Color(.controlBackgroundColor))
-        .cornerRadius(8)
     }
 }
 
-struct AutomationRowCard: View {
-    let automation: AutomationModel
-    
+struct GitRepoRow: View {
+    let repo: GitRepo
+
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: automation.isEnabled ? "checkmark.circle.fill" : "circle")
-                .foregroundColor(automation.isEnabled ? .green : .gray)
-            
+        HStack(spacing: 10) {
+            Circle()
+                .fill(repo.isDirty ? Color.orange : Color.green)
+                .frame(width: 8, height: 8)
+
             VStack(alignment: .leading, spacing: 2) {
-                Text(automation.name)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                Text(automation.schedule)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                Text(repo.name).font(.caption).fontWeight(.semibold)
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.triangle.branch").font(.caption2).foregroundColor(.secondary)
+                    Text(repo.branch).font(.caption2).foregroundColor(.secondary)
+                    if repo.isDirty {
+                        Text("\(repo.uncommittedCount) uncommitted")
+                            .font(.caption2).foregroundColor(.orange)
+                    }
+                    if repo.aheadCount > 0 {
+                        Text("↑\(repo.aheadCount)").font(.caption2).foregroundColor(.blue)
+                    }
+                    if repo.behindCount > 0 {
+                        Text("↓\(repo.behindCount)").font(.caption2).foregroundColor(.red)
+                    }
+                }
             }
-            
+
             Spacer()
-            
-            if let lastRun = automation.lastRun {
-                Text(lastRun.formatted(date: .omitted, time: .shortened))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(repo.lastCommitDate).font(.caption2).foregroundColor(.secondary)
+                Text(repo.lastCommitMessage).font(.caption2).foregroundColor(.secondary).lineLimit(1)
             }
+            .frame(maxWidth: 180)
         }
         .padding(8)
         .background(Color(.controlBackgroundColor))
         .cornerRadius(6)
+    }
+}
+
+// MARK: - StatCard
+
+struct StatCard: View {
+    let title: String; let value: String; let icon: String; let color: Color
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: icon).font(.system(size: 18)).foregroundColor(color)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.caption).foregroundColor(.secondary)
+                Text(value).font(.title3).fontWeight(.bold)
+            }
+        }
+        .padding().frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.controlBackgroundColor)).cornerRadius(8)
+    }
+}
+
+struct AutomationRowCard: View {
+    @EnvironmentObject var automationManager: AutomationManager
+    let automation: AutomationModel
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: automationManager.runningAutomations.contains(automation.id)
+                  ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill")
+                .foregroundColor(automationManager.runningAutomations.contains(automation.id) ? .blue : .green)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(automation.name).font(.caption).fontWeight(.semibold)
+                Text(ScheduleOption.displayName(for: automation.schedule))
+                    .font(.caption2).foregroundColor(.secondary)
+            }
+            Spacer()
+            if let lastRun = automation.lastRun {
+                Text(lastRun.formatted(date: .omitted, time: .shortened))
+                    .font(.caption2).foregroundColor(.secondary)
+            }
+        }
+        .padding(8).background(Color(.controlBackgroundColor)).cornerRadius(6)
     }
 }
 
@@ -188,4 +227,6 @@ struct AutomationRowCard: View {
         .environmentObject(AutomationManager())
         .environmentObject(MonitoringManager())
         .environmentObject(CloudKitManager())
+        .environmentObject(OllamaManager())
+        .environmentObject(GitStatusManager())
 }
