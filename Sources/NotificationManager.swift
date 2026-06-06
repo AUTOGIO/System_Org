@@ -1,5 +1,6 @@
 import Foundation
 import UserNotifications
+import AppKit
 
 class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
     @Published var isAuthorized = false

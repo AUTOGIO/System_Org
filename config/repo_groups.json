@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "id": "core_system",
+      "name": "Core System",
+      "description": "Repos that organize, monitor, or control the local workstation."
+    },
+    {
+      "id": "business_automation",
+      "name": "Business Automation",
+      "description": "Repos that touch business data, reports, exports, or guarded workflows."
+    },
+    {
+      "id": "local_app",
+      "name": "Local App",
+      "description": "User-facing local-first macOS, terminal, or desktop applications."
+    },
+    {
+      "id": "personal_system",
+      "name": "Personal System",
+      "description": "Repos that support personal operations, dashboards, or life admin."
+    },
+    {
+      "id": "tooling",
+      "name": "Tooling",
+      "description": "Developer tools, skill systems, templates, and support utilities."
+    },
+    {
+      "id": "reference",
+      "name": "Reference",
+      "description": "Repos kept for learning, examples, docs, or future reference."
+    },
+    {
+      "id": "archive",
+      "name": "Archive",
+      "description": "Repos kept for history but not actively automated."
+    }
+  ]
+}

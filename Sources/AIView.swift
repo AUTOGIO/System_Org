@@ -170,7 +170,7 @@ struct AIView: View {
         let userMsg = ChatMessage(role: .user, content: text)
         messages.append(userMsg)
 
-        var assistantMsg = ChatMessage(role: .assistant, content: "", isStreaming: true)
+        let assistantMsg = ChatMessage(role: .assistant, content: "", isStreaming: true)
         messages.append(assistantMsg)
         let assistantId = assistantMsg.id
 
@@ -203,12 +203,15 @@ struct AIView: View {
     }
 
     private func saveToObsidian() {
-        let vault = NSString(string: "$HOME/Documents/OBSIDIAN_VAULTS").expandingTildeInPath
-        let title = "AI Chat \(Date().formatted(date: .abbreviated, time: .shortened))"
+        let vault = AutomationManager.expandPath("$HOME/Documents/OBSIDIAN_VAULTS")
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH-mm-ss"
+        let title = "AI Chat \(formatter.string(from: Date()))"
         let content = messages.map { m in
             "**\(m.role == .user ? "You" : "AI"):** \(m.content)"
         }.joined(separator: "\n\n")
         let path = (vault as NSString).appendingPathComponent("\(title).md")
+        try? FileManager.default.createDirectory(atPath: vault, withIntermediateDirectories: true)
         try? content.write(toFile: path, atomically: true, encoding: .utf8)
     }
 

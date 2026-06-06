@@ -28,6 +28,7 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/xcuserdata/
 
 # ── Build artefacts ────────────────────────────────────
+.build/
 build/
 *.o
 *.a
@@ -40,3 +41,7 @@ build/
 *.pem
 *.key
 Secrets.swift
+
+# ── Runtime caches ─────────────────────────────────────
+__pycache__/
+*.pyc

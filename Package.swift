@@ -6,14 +6,17 @@ let package = Package(
     platforms: [
         .macOS(.v13)
     ],
-    dependencies: [
-        // CloudKit is part of Foundation on macOS
-    ],
+    dependencies: [],
     targets: [
         .executableTarget(
             name: "SystemOrganizer",
             dependencies: [],
             path: "Sources"
+        ),
+        .testTarget(
+            name: "SystemOrganizerTests",
+            dependencies: ["SystemOrganizer"],
+            path: "Tests/SystemOrganizerTests"
         )
     ]
 )

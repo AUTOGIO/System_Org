@@ -1,137 +1,112 @@
 # System Organizer
 
-A native macOS automation hub built with SwiftUI. Manage scripts, monitor system health, control remote machines via SSH, view calendar events, and integrate with Obsidian — all from a single menu-bar app.
+System Organizer is a personal, local-first macOS automation hub for Apple Silicon Macs. It is built with SwiftUI and SwiftPM, runs on this workstation, and manages local scripts, repo health, Obsidian reports, Git status, local Ollama access, Calendar, and SSH helpers.
 
-![Platform](https://img.shields.io/badge/platform-macOS%2013%2B-blue)
-![Swift](https://img.shields.io/badge/swift-5.9-orange)
-![License](https://img.shields.io/badge/license-MIT-green)
+This is not a team or commercial product. The target environment is this Mac: Apple Silicon M3/M4 class hardware on macOS 26.6.
 
----
+## Current Deployment
 
-## Features
+```text
+Installed app: /Applications/SystemOrganizer.app
+Repo:          /Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2
+Scripts:       /Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2/scripts/SystemOrganizer
+App state:     ~/Library/Application Support/SystemOrganizer
+Obsidian:      ~/Documents/OBSIDIAN_VAULTS/System Organizer/Reports
+```
 
-| Module | Status | Description |
+The deployed app has been built as an arm64 release binary, packaged as a macOS `.app`, ad-hoc signed for local use, installed under `/Applications`, launched, and verified running.
+
+## Current Modules
+
+| Module | Status | Notes |
 |---|---|---|
-| **Automations** | ✅ Working | Run AppleScript / Python / Shell scripts on a schedule or on demand |
-| **Monitoring** | ✅ Working | Real-time CPU, memory, disk charts via native Mach APIs |
-| **Remote Control** | ✅ Working | SSH into machines, run commands, check connectivity |
-| **Calendar** | ✅ Working | View EventKit events per day with full-access on macOS 14+ |
-| **Obsidian** | ✅ Working | Browse vaults, list notes, create new `.md` files |
-| **Menu Bar** | ✅ Working | Quick stats + one-click run from the menu bar |
-| **CloudKit Sync** | ⚙️ Optional | Opt-in in Settings; requires a signed app with CloudKit entitlement |
+| Automations | Working | Manual scripts, schedules, file watchers, chaining, run history, notifications |
+| Repo Inventory | Working | Scans configured roots and writes `config/repo_inventory.json` |
+| Repo State Summary | Working | Compact table of repo group, active status, branch, dirty count, upstream, and validation readiness |
+| Repo Health Check | Working | Read-only findings for repo paths, Git state, upstream state, and validation configuration |
+| Active Project Validation | Working | Runs safe validation commands from `config/projects.json` |
+| Dashboard | Working | Automation, system, Git, and runtime status |
+| Menu Bar | Working | Quick access to enabled automations |
+| Obsidian | Working | Writes dated operational reports |
+| AI Assistant | Working when Ollama is running | Uses local Ollama at `http://localhost:11434` |
+| Calendar | Working with permission | EventKit day view |
+| Remote Control | Working with SSH setup | Persisted machines and remote commands |
 
----
+## Repo Model
 
-## Requirements
+System Organizer separates visibility from automation:
 
-- macOS 13 Ventura or later (macOS 14 Sonoma recommended)
-- Xcode 15+ **or** Swift 5.9 CLI toolchain
-- iCloud account (only if CloudKit sync is enabled)
-
----
-
-## Quick Start
-
-### Build with Xcode
-```bash
-open System_Org.code-workspace
-# Product → Run  (⌘R)
+```text
+config/repo_roots.json       folders to scan
+config/repo_inventory.json   all discovered repos
+config/repo_groups.json      repo categories
+config/projects.json         active managed projects only
 ```
 
-### Build with Swift CLI
-```bash
-cd System_Org
-swift build -c release
-.build/release/SystemOrganizer
+Current active managed repos:
+
+```text
+System_Org 2
+FOKS_BLOOMBERG
+fulofilo-analytics
+PersonalLifeOS
 ```
 
----
+Current inventory-only repos:
 
-## Project Structure
-
-```
-System_Org/
-├── Sources/
-│   ├── SystemOrganizerApp.swift   # App entry point, scene setup
-│   ├── ContentView.swift          # Root TabView + tab bar
-│   ├── DashboardView.swift        # Stats cards + activity feed
-│   ├── AutomationsView.swift      # Automation list, search, filter
-│   ├── AutomationManager.swift    # Script runner, scheduler, JSON persistence
-│   ├── AutomationModel.swift      # Data models (Automation, RemoteMachine, …)
-│   ├── MonitoringView.swift       # CPU/memory charts (Swift Charts)
-│   ├── MonitoringManager.swift    # Mach API stats, SSH ping
-│   ├── RemoteControlView.swift    # SSH machine cards + terminal input
-│   ├── CalendarView.swift         # EventKit day view
-│   ├── ObsidianView.swift         # Vault browser + note creator
-│   ├── SettingsView.swift         # CloudKit toggle, sync interval, log retention
-│   ├── MenuBarView.swift          # Menu-bar extra
-│   └── CloudKitManager.swift      # Optional CloudKit sync (opt-in)
-├── docs/
-│   ├── quick-start.md
-│   ├── installation-guide.md
-│   ├── build-and-distribution.md
-│   ├── app-overview.md
-│   └── project-summary.md
-├── Package.swift
-└── README.md
+```text
+claude-skills-os
+FuloFilo_FF777
+Initializing-TensorFlow-Environment-on-M3-M3-Pro-and-M3-Max-Macbook-Pros.
 ```
 
----
+## Daily Commands
 
-## Automation Scripts
-
-Scripts live in `~/Documents/scripts/` by default. The runner dispatches by extension:
-
-| Extension | Interpreter |
-|---|---|
-| `.applescript` / `.scpt` | `/usr/bin/osascript` |
-| `.py` | `python3` (via `/usr/bin/env`) |
-| `.sh` / `.bash` | `/bin/bash` |
-
-Schedules fire at the correct wall-clock time (not just "24 h from launch"):
-
-| ID | Default time |
-|---|---|
-| `daily_9am` | 09:00 every day |
-| `daily_6pm` | 18:00 every day |
-| `daily_midnight` | 00:00 every day |
-| `hourly` | Top of each hour |
-| `manual` | On-demand only |
-
-Automation state is persisted to:
-```
-~/Library/Application Support/SystemOrganizer/automations.json
+```zsh
+/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_state_summary.sh
 ```
 
----
+```zsh
+/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_health_check.sh
+```
 
-## CloudKit Sync
+```zsh
+/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/project_safe_validation.sh
+```
 
-Disabled by default to prevent crashes in unsigned/development builds.
+## Deploy
 
-To enable:
-1. Open **Settings → CloudKit Sync** and toggle **Enable CloudKit Sync**
-2. Ensure the app is signed with a provisioning profile that includes the `com.apple.developer.icloud-services` entitlement
-3. Set `DISABLE_CLOUDKIT=1` in your scheme's environment variables to force-disable during development
+Run the real local deployment:
 
----
+```zsh
+/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/deploy_system_organizer.sh
+```
 
-## Known Limitations / Roadmap
+The deploy script:
 
-- [ ] Launch-at-Login via `SMAppService` (toggle exists in UI, not yet wired up)
-- [ ] User Notifications for automation results
-- [ ] Add/edit/delete automations from the UI (currently read from JSON / defaults)
-- [ ] Obsidian note editor (currently create-only)
-- [ ] Remote machine config persistence (currently resets on relaunch)
+- verifies macOS and Apple Silicon architecture
+- runs Swift tests
+- builds the arm64 release binary
+- packages `/Applications/SystemOrganizer.app`
+- backs up any existing installed app
+- signs the app locally
+- installs live automation configuration
+- launches and verifies the app
 
----
+## Validation
 
-## Documentation
+Current verified checks:
 
-See the [`docs/`](docs/) folder for installation, build, and distribution guides.
+```text
+swift build                         passed
+swift test                          passed
+zsh -n scripts/SystemOrganizer/*.sh passed
+repo_health_check.sh                0 fail
+project_safe_validation.sh          passed all active projects
+```
 
----
+Expected current warnings are dirty working trees in active repos. They are real local work state, not deployment failures.
 
-## License
+## Operating Rule
 
-MIT — see `LICENSE` for details.
+Inventory everything. Manage only what matters. Automate only what is safe.

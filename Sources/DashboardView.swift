@@ -3,7 +3,6 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject var automationManager: AutomationManager
     @EnvironmentObject var monitoringManager: MonitoringManager
-    @EnvironmentObject var cloudKitManager:   CloudKitManager
     @EnvironmentObject var ollamaManager:     OllamaManager
     @EnvironmentObject var gitStatusManager:  GitStatusManager
 
@@ -11,18 +10,36 @@ struct DashboardView: View {
         ScrollView {
             VStack(spacing: 20) {
 
-                // ── System Stats ─────────────────────────────────────
+                // ── App Status ───────────────────────────────────────
                 HStack(spacing: 14) {
-                    StatCard(title: "CPU",    value: String(format: "%.1f%%", monitoringManager.systemStats.cpuUsage),
-                             icon: "cpu",          color: .blue)
-                    StatCard(title: "Memory", value: String(format: "%.1f%%", monitoringManager.systemStats.memoryUsage),
-                             icon: "memorychip",   color: .orange)
-                    StatCard(title: "Disk",   value: String(format: "%.1f%%", monitoringManager.systemStats.diskUsage),
-                             icon: "internaldrive",color: .green)
+                    StatCard(title: "Automations",
+                             value: "\(automationManager.automations.filter { $0.isEnabled }.count) Enabled",
+                             icon: "gearshape.2",
+                             color: .blue)
+                    StatCard(title: "Running",
+                             value: "\(automationManager.runningAutomations.count)",
+                             icon: "play.circle",
+                             color: .green)
                     StatCard(title: "AI",
                              value: ollamaManager.isAvailable ? "Online" : "Offline",
                              icon: "brain.head.profile",
                              color: ollamaManager.isAvailable ? .purple : .gray)
+                }
+                .padding(.horizontal)
+
+                HStack(spacing: 14) {
+                    StatCard(title: "CPU",
+                             value: formatPercent(monitoringManager.metrics.cpuUsage),
+                             icon: "cpu",
+                             color: .orange)
+                    StatCard(title: "Memory",
+                             value: formatPercent(monitoringManager.metrics.memoryUsage),
+                             icon: "memorychip",
+                             color: .purple)
+                    StatCard(title: "Disk",
+                             value: formatPercent(monitoringManager.metrics.diskUsage),
+                             icon: "internaldrive",
+                             color: .teal)
                 }
                 .padding(.horizontal)
 
@@ -76,27 +93,14 @@ struct DashboardView: View {
                 // ── Git Status Widget ─────────────────────────────────
                 GitStatusWidget()
 
-                // ── CloudKit Status ───────────────────────────────────
-                HStack(spacing: 12) {
-                    Image(systemName: "icloud.fill").foregroundColor(.blue)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("CloudKit Sync").font(.headline)
-                        Text(cloudKitManager.syncStatus).font(.caption).foregroundColor(.secondary)
-                    }
-                    Spacer()
-                    Button { cloudKitManager.syncData() } label: {
-                        Image(systemName: "arrow.clockwise").font(.system(size: 12))
-                    }
-                    .buttonStyle(.bordered)
-                }
-                .padding()
-                .background(Color(.controlBackgroundColor)).cornerRadius(8)
-                .padding(.horizontal)
-
                 Spacer()
             }
             .padding(.vertical)
         }
+    }
+
+    private func formatPercent(_ value: Double) -> String {
+        "\(Int((value * 100).rounded()))%"
     }
 }
 
@@ -226,7 +230,6 @@ struct AutomationRowCard: View {
     DashboardView()
         .environmentObject(AutomationManager())
         .environmentObject(MonitoringManager())
-        .environmentObject(CloudKitManager())
         .environmentObject(OllamaManager())
         .environmentObject(GitStatusManager())
 }

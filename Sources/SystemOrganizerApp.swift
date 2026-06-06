@@ -1,11 +1,9 @@
 import SwiftUI
-import CloudKit
 import ServiceManagement
 
 @main
 struct SystemOrganizerApp: App {
     @StateObject private var automationManager  = AutomationManager()
-    @StateObject private var cloudKitManager    = CloudKitManager()
     @StateObject private var monitoringManager  = MonitoringManager()
     @StateObject private var ollamaManager      = OllamaManager()
     @StateObject private var gitStatusManager   = GitStatusManager()
@@ -19,7 +17,6 @@ struct SystemOrganizerApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(automationManager)
-                .environmentObject(cloudKitManager)
                 .environmentObject(monitoringManager)
                 .environmentObject(ollamaManager)
                 .environmentObject(gitStatusManager)
@@ -31,7 +28,6 @@ struct SystemOrganizerApp: App {
         MenuBarExtra("System Organizer", systemImage: "gearshape.fill") {
             MenuBarView()
                 .environmentObject(automationManager)
-                .environmentObject(cloudKitManager)
                 .environmentObject(monitoringManager)
                 .environmentObject(ollamaManager)
         }
@@ -40,9 +36,7 @@ struct SystemOrganizerApp: App {
     // MARK: - Setup
 
     private func setupApp() {
-        cloudKitManager.initializeCloudKit()
         automationManager.loadAutomations()
-        monitoringManager.startMonitoring()
         gitStatusManager.refresh()
         notificationManager.requestAuthorization()
         syncLaunchAtLoginState()

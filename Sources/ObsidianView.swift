@@ -1,14 +1,7 @@
 import SwiftUI
 
 struct ObsidianView: View {
-    @State private var vaults: [ObsidianVault] = [
-        ObsidianVault(
-            id: "main",
-            name: "Main Vault",
-            path: "$HOME/Documents/OBSIDIAN_VAULTS",
-            isDefault: true
-        )
-    ]
+    @State private var vaults: [ObsidianVault] = ObsidianVaultStore.loadVaults()
     
     @State private var selectedVault: ObsidianVault?
     @State private var notes: [String] = []
@@ -114,7 +107,13 @@ struct ObsidianView: View {
             }
         }
         .sheet(isPresented: $showAddVault) {
-            AddVaultSheet(isPresented: $showAddVault, vaults: $vaults)
+            AddVaultSheet(isPresented: $showAddVault, vaults: $vaults) {
+                ObsidianVaultStore.saveVaults(vaults)
+                if selectedVault == nil, let defaultVault = vaults.first(where: { $0.isDefault }) {
+                    selectedVault = defaultVault
+                    loadNotes(from: defaultVault)
+                }
+            }
         }
         .sheet(isPresented: $showNewNote) {
             NewNoteSheet(
@@ -122,7 +121,13 @@ struct ObsidianView: View {
                 vault: selectedVault,
                 title: $newNoteTitle,
                 content: $newNoteContent
-            )
+            ) {
+                if let selectedVault {
+                    loadNotes(from: selectedVault)
+                }
+                newNoteTitle = ""
+                newNoteContent = ""
+            }
         }
         .onAppear {
             if let defaultVault = vaults.first(where: { $0.isDefault }) {
@@ -133,14 +138,46 @@ struct ObsidianView: View {
     }
     
     private func loadNotes(from vault: ObsidianVault) {
-        let expandedPath = NSString(string: vault.path).expandingTildeInPath
+        let expandedPath = AutomationManager.expandPath(vault.path)
         
         do {
             let contents = try FileManager.default.contentsOfDirectory(atPath: expandedPath)
-            notes = contents.filter { $0.hasSuffix(".md") }
+            notes = contents.filter { $0.hasSuffix(".md") }.sorted()
         } catch {
             notes = []
         }
+    }
+}
+
+enum ObsidianVaultStore {
+    static let defaultVaults = [
+        ObsidianVault(
+            id: "main",
+            name: "Main Vault",
+            path: "$HOME/Documents/OBSIDIAN_VAULTS",
+            isDefault: true
+        )
+    ]
+
+    private static var vaultsURL: URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = base.appendingPathComponent("SystemOrganizer", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("obsidian_vaults.json")
+    }
+
+    static func loadVaults() -> [ObsidianVault] {
+        guard let data = try? Data(contentsOf: vaultsURL),
+              let decoded = try? JSONDecoder().decode([ObsidianVault].self, from: data),
+              !decoded.isEmpty else {
+            return defaultVaults
+        }
+        return decoded
+    }
+
+    static func saveVaults(_ vaults: [ObsidianVault]) {
+        guard let data = try? JSONEncoder().encode(vaults) else { return }
+        try? data.write(to: vaultsURL, options: .atomic)
     }
 }
 
@@ -208,6 +245,7 @@ struct NoteRowView: View {
 struct AddVaultSheet: View {
     @Binding var isPresented: Bool
     @Binding var vaults: [ObsidianVault]
+    var onSave: () -> Void = {}
     
     @State private var name = ""
     @State private var path = ""
@@ -244,6 +282,7 @@ struct AddVaultSheet: View {
                         }
                         
                         vaults.append(newVault)
+                        onSave()
                         isPresented = false
                     }
                     .disabled(name.isEmpty || path.isEmpty)
@@ -258,6 +297,7 @@ struct NewNoteSheet: View {
     let vault: ObsidianVault?
     @Binding var title: String
     @Binding var content: String
+    var onSaved: () -> Void = {}
     
     var body: some View {
         NavigationView {
@@ -282,8 +322,10 @@ struct NewNoteSheet: View {
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        saveNote()
-                        isPresented = false
+                        if saveNote() {
+                            onSaved()
+                            isPresented = false
+                        }
                     }
                     .disabled(title.isEmpty)
                 }
@@ -291,17 +333,22 @@ struct NewNoteSheet: View {
         }
     }
     
-    private func saveNote() {
-        guard let vault = vault else { return }
+    private func saveNote() -> Bool {
+        guard let vault = vault else { return false }
         
-        let expandedPath = NSString(string: vault.path).expandingTildeInPath
-        let filePath = (expandedPath as NSString).appendingPathComponent("\(title).md")
+        let expandedPath = AutomationManager.expandPath(vault.path)
+        let safeTitle = title
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "/", with: "-")
+        let filePath = (expandedPath as NSString).appendingPathComponent("\(safeTitle).md")
         
         do {
             try FileManager.default.createDirectory(atPath: expandedPath, withIntermediateDirectories: true)
             try content.write(toFile: filePath, atomically: true, encoding: .utf8)
+            return true
         } catch {
             print("Error saving note: \(error)")
+            return false
         }
     }
 }

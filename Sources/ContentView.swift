@@ -2,21 +2,18 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var automationManager:  AutomationManager
-    @EnvironmentObject var cloudKitManager:    CloudKitManager
-    @EnvironmentObject var monitoringManager:  MonitoringManager
     @EnvironmentObject var ollamaManager:      OllamaManager
     @EnvironmentObject var gitStatusManager:   GitStatusManager
 
     @State private var selectedTab: TabSelection = .dashboard
 
     enum TabSelection: CaseIterable {
-        case dashboard, automations, monitoring, ai, remote, calendar, obsidian, settings
+        case dashboard, automations, ai, remote, calendar, obsidian, settings
 
         var icon: String {
             switch self {
             case .dashboard:   return "chart.bar.fill"
             case .automations: return "gearshape.fill"
-            case .monitoring:  return "waveform.circle.fill"
             case .ai:          return "brain.head.profile"
             case .remote:      return "network"
             case .calendar:    return "calendar"
@@ -29,7 +26,6 @@ struct ContentView: View {
             switch self {
             case .dashboard:   return "Dashboard"
             case .automations: return "Automations"
-            case .monitoring:  return "Monitor"
             case .ai:          return "AI"
             case .remote:      return "Remote"
             case .calendar:    return "Calendar"
@@ -53,20 +49,11 @@ struct ContentView: View {
                     }
                     Spacer()
                     HStack(spacing: 12) {
-                        // Ollama status dot
                         HStack(spacing: 4) {
                             Circle()
                                 .fill(ollamaManager.isAvailable ? Color.purple : Color.gray)
                                 .frame(width: 7, height: 7)
                             Text("AI")
-                                .font(.caption2).foregroundColor(.secondary)
-                        }
-                        // CloudKit status dot
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(cloudKitManager.isCloudKitAvailable ? Color.green : Color.red)
-                                .frame(width: 7, height: 7)
-                            Text(cloudKitManager.syncStatus)
                                 .font(.caption2).foregroundColor(.secondary)
                         }
                     }
@@ -81,8 +68,6 @@ struct ContentView: View {
                         .tag(TabSelection.dashboard)
                     AutomationsView()
                         .tag(TabSelection.automations)
-                    MonitoringView()
-                        .tag(TabSelection.monitoring)
                     AIView()
                         .tag(TabSelection.ai)
                     RemoteControlView()
@@ -111,7 +96,6 @@ struct ContentView: View {
             }
             .frame(minWidth: 1100, minHeight: 720)
         }
-        .onAppear { monitoringManager.startMonitoring() }
     }
 
     private func badgeFor(_ tab: TabSelection) -> Int {
@@ -180,7 +164,6 @@ extension View {
 #Preview {
     ContentView()
         .environmentObject(AutomationManager())
-        .environmentObject(CloudKitManager())
         .environmentObject(MonitoringManager())
         .environmentObject(OllamaManager())
         .environmentObject(GitStatusManager())

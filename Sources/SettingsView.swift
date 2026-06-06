@@ -2,18 +2,15 @@ import SwiftUI
 import ServiceManagement
 
 struct SettingsView: View {
-    @EnvironmentObject var cloudKitManager:     CloudKitManager
     @EnvironmentObject var automationManager:   AutomationManager
     @EnvironmentObject var ollamaManager:       OllamaManager
     @EnvironmentObject var notificationManager: NotificationManager
 
     @AppStorage("LaunchAtLogin")         private var launchAtLogin       = false
     @AppStorage("NotificationsEnabled")  private var notificationsEnabled = true
-    @AppStorage("EnableCloudKit")        private var enableCloudKit       = false
-    @AppStorage("gitScanPaths")          private var gitScanPaths         = "~/Documents,~/Developer,~/Projects"
+    @AppStorage("gitScanPaths")          private var gitScanPaths         = GitStatusManager.defaultScanPathsRaw
+    @AppStorage("RunHistoryLimit")       private var logRetention         = 500
 
-    @State private var syncInterval = 300.0
-    @State private var logRetention = 100
     @State private var showClearHistoryAlert = false
 
     var body: some View {
@@ -102,56 +99,18 @@ struct SettingsView: View {
                 // ── Git Scanner ──────────────────────────────────────
                 SettingsSectionView(title: "Git Scanner") {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Scan paths (comma-separated)")
+                        Text("Scan paths")
                             .font(.caption).fontWeight(.semibold)
-                        TextField("~/Documents,~/Developer", text: $gitScanPaths)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.caption)
-                    }
-                }
-
-                // ── CloudKit ─────────────────────────────────────────
-                SettingsSectionView(title: "CloudKit Sync") {
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "icloud.fill").foregroundColor(.blue).frame(width: 20)
-                            Text("Enable CloudKit Sync").font(.caption)
-                            Spacer()
-                            Toggle("", isOn: Binding(
-                                get: { enableCloudKit },
-                                set: { newValue in
-                                    enableCloudKit = newValue
-                                    if newValue { cloudKitManager.initializeCloudKit() }
-                                }
-                            ))
-                            .labelsHidden()
-                        }
-                        if !enableCloudKit {
-                            Text("Requires a signed app with CloudKit entitlement.")
-                                .font(.caption2).foregroundColor(.orange)
-                        }
-                        if enableCloudKit {
-                            HStack {
-                                Circle()
-                                    .fill(cloudKitManager.isCloudKitAvailable ? Color.green : Color.red)
-                                    .frame(width: 8, height: 8)
-                                Text(cloudKitManager.syncStatus)
-                                    .font(.caption2).foregroundColor(.secondary)
-                                Spacer()
-                                Button("Sync Now") { cloudKitManager.syncData() }
-                                    .buttonStyle(.bordered).controlSize(.small)
-                            }
-                        }
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text("Sync Interval")
-                                    .font(.caption)
-                                Spacer()
-                                Text("\(Int(syncInterval))s")
-                                    .font(.caption).foregroundColor(.secondary)
-                            }
-                            Slider(value: $syncInterval, in: 60...600, step: 60)
-                        }
+                        TextEditor(text: $gitScanPaths)
+                            .font(.system(size: 12, design: .monospaced))
+                            .frame(minHeight: 160)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color(.separatorColor), lineWidth: 1)
+                            )
+                        Text("Use one path per line. Commas and semicolons also work.")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                     }
                 }
 
@@ -254,7 +213,6 @@ struct SettingsInfoRow: View {
 
 #Preview {
     SettingsView()
-        .environmentObject(CloudKitManager())
         .environmentObject(AutomationManager())
         .environmentObject(OllamaManager())
         .environmentObject(NotificationManager.shared)

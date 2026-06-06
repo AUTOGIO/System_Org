@@ -2,54 +2,10 @@ import SwiftUI
 
 struct MenuBarView: View {
     @EnvironmentObject var automationManager: AutomationManager
-    @EnvironmentObject var cloudKitManager: CloudKitManager
     @EnvironmentObject var ollamaManager: OllamaManager
-    @EnvironmentObject var monitoringManager: MonitoringManager
     
     var body: some View {
         VStack(spacing: 0) {
-            // Quick Stats
-            VStack(spacing: 8) {
-                HStack {
-                    Text("System Status")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                    Spacer()
-                }
-                
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("CPU")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text(String(format: "%.0f%%", monitoringManager.systemStats.cpuUsage))
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Memory")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text(String(format: "%.0f%%", monitoringManager.systemStats.memoryUsage))
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Disk")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text(String(format: "%.0f%%", monitoringManager.systemStats.diskUsage))
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                }
-            }
-            .padding()
-            
-            Divider()
-            
             // Quick Actions
             VStack(spacing: 4) {
                 Text("Quick Actions")
@@ -83,28 +39,6 @@ struct MenuBarView: View {
                 }
             }
             .padding(.vertical, 8)
-            
-            Divider()
-            
-            // CloudKit Status
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(cloudKitManager.isCloudKitAvailable ? Color.green : Color.red)
-                    .frame(width: 6, height: 6)
-                
-                Text(cloudKitManager.syncStatus)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                Button(action: { cloudKitManager.syncData() }) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 10))
-                }
-                .buttonStyle(.plain)
-            }
-            .padding()
             
             Divider()
             
@@ -144,6 +78,4 @@ struct MenuBarView: View {
 #Preview {
     MenuBarView()
         .environmentObject(AutomationManager())
-        .environmentObject(CloudKitManager())
-        .environmentObject(MonitoringManager())
 }

@@ -59,11 +59,14 @@ class OllamaManager: NSObject, ObservableObject {
                 self?.availableModels = models
                 self?.isAvailable = !models.isEmpty
                 self?.statusMessage = models.isEmpty
-                    ? "No models — run: ollama pull llama3.2"
+                    ? "No models — run: ollama pull qwen2.5:7b"
                     : "\(models.count) model(s) ready"
-                // Auto-select best default
-                if let best = models.first(where: { $0.name.hasPrefix("llama3") })
-                    ?? models.first {
+                // Auto-select best model by preference order
+                let preferenceOrder = ["qwen2.5", "gemma3", "deepseek-r1", "llama3", "codellama"]
+                let best = preferenceOrder
+                    .compactMap { prefix in models.first(where: { $0.name.hasPrefix(prefix) }) }
+                    .first ?? models.first
+                if let best = best {
                     self?.selectedModel = best.name
                 }
             }

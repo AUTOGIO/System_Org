@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "projects": [
+    {
+      "id": "system_organizer",
+      "name": "System Organizer",
+      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2",
+      "role": "core_system",
+      "validate_cmd": "swift build",
+      "daily_cmd": "",
+      "daily_requires_env": "",
+      "tags": ["swift", "macos", "automation", "local-first", "core"]
+    },
+    {
+      "id": "foks_bloomberg",
+      "name": "FOKS Bloomberg",
+      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/FOKS_BLOOMBERG",
+      "role": "local_app",
+      "validate_cmd": "scripts/validate.sh",
+      "daily_cmd": "",
+      "daily_requires_env": "",
+      "tags": ["swift", "macos", "terminal", "local-first"]
+    },
+    {
+      "id": "fulofilo_analytics",
+      "name": "fulofilo-analytics",
+      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/fulofilo-analytics",
+      "role": "business_automation",
+      "validate_cmd": "make automation-validate-data-integrity",
+      "daily_cmd": "make automation-run-daily",
+      "daily_requires_env": "ALLOW_PROJECT_DATA_WRITES=1",
+      "tags": ["python", "make", "sales", "reports", "guarded"]
+    },
+    {
+      "id": "personallifeos",
+      "name": "PersonalLifeOS",
+      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/PersonalLifeOS",
+      "role": "personal_system",
+      "validate_cmd": "xcodebuild -project LifeOS.xcodeproj -scheme LifeOS build -quiet",
+      "daily_cmd": "",
+      "daily_requires_env": "",
+      "tags": ["swift", "swiftui", "swiftdata", "personal-system", "local-first"]
+    }
+  ]
+}

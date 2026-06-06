@@ -68,10 +68,14 @@ struct ScheduleOption: Identifiable {
 
     static let options: [ScheduleOption] = [
         ScheduleOption(id: "manual",         displayName: "Manual"),
+        ScheduleOption(id: "every_15_min",   displayName: "Every 15 Minutes"),
+        ScheduleOption(id: "every_30_min",   displayName: "Every 30 Minutes"),
         ScheduleOption(id: "hourly",         displayName: "Hourly"),
         ScheduleOption(id: "daily_9am",      displayName: "Daily at 9 AM"),
+        ScheduleOption(id: "daily_noon",     displayName: "Daily at Noon"),
         ScheduleOption(id: "daily_6pm",      displayName: "Daily at 6 PM"),
         ScheduleOption(id: "daily_midnight", displayName: "Daily at Midnight"),
+        ScheduleOption(id: "weekdays_9am",   displayName: "Weekdays at 9 AM"),
         ScheduleOption(id: "weekly",         displayName: "Weekly"),
         ScheduleOption(id: "file_watch",     displayName: "File Watcher"),
     ]

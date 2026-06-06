@@ -265,15 +265,19 @@ struct AutomationEditorSheet: View {
     let mode: EditorMode
     var onSave: (AutomationModel) -> Void
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var automationManager: AutomationManager
 
     @State private var name: String
     @State private var description: String
     @State private var scriptPath: String
+    @State private var scriptContent: String
     @State private var schedule: String
     @State private var category: AutomationCategory
     @State private var tags: String
     @State private var notes: String
     @State private var watchPath: String
+    @State private var dependsOn: String
+    @State private var triggersOnSuccess: String
     @State private var isEnabled: Bool
 
     init(mode: EditorMode, onSave: @escaping (AutomationModel) -> Void) {
@@ -281,20 +285,48 @@ struct AutomationEditorSheet: View {
         if case .edit(let a) = mode {
             _name = State(initialValue: a.name); _description = State(initialValue: a.description)
             _scriptPath = State(initialValue: a.scriptPath); _schedule = State(initialValue: a.schedule)
+            _scriptContent = State(initialValue: a.scriptContent)
             _category = State(initialValue: a.category)
             _tags = State(initialValue: a.tags.joined(separator: ", "))
             _notes = State(initialValue: a.notes); _watchPath = State(initialValue: a.watchPath ?? "")
+            _dependsOn = State(initialValue: a.dependsOn.joined(separator: ", "))
+            _triggersOnSuccess = State(initialValue: a.triggersOnSuccess.joined(separator: ", "))
             _isEnabled = State(initialValue: a.isEnabled)
         } else {
             _name = State(initialValue: ""); _description = State(initialValue: "")
-            _scriptPath = State(initialValue: "$HOME/Documents/scripts/")
+            _scriptPath = State(initialValue: "")
+            _scriptContent = State(initialValue: "")
             _schedule = State(initialValue: "manual"); _category = State(initialValue: .general)
             _tags = State(initialValue: ""); _notes = State(initialValue: "")
-            _watchPath = State(initialValue: ""); _isEnabled = State(initialValue: true)
+            _watchPath = State(initialValue: "")
+            _dependsOn = State(initialValue: "")
+            _triggersOnSuccess = State(initialValue: "")
+            _isEnabled = State(initialValue: true)
         }
     }
 
     var isEditing: Bool { if case .edit = mode { return true }; return false }
+    var hasRunnableScript: Bool {
+        !scriptPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+        !scriptContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    var scriptPathWarning: String? {
+        let trimmed = scriptPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let expanded = (trimmed as NSString)
+            .expandingTildeInPath
+            .replacingOccurrences(of: "$HOME", with: NSHomeDirectory())
+        return FileManager.default.fileExists(atPath: expanded) ? nil : "Script file does not exist yet."
+    }
+    var availableAutomationIds: [String] {
+        automationManager.automations
+            .filter { automation in
+                if case .edit(let current) = mode { return automation.id != current.id }
+                return true
+            }
+            .map(\.id)
+            .sorted()
+    }
 
     var body: some View {
         NavigationView {
@@ -306,6 +338,17 @@ struct AutomationEditorSheet: View {
                 }
                 Section("Script") {
                     TextField("Script Path", text: $scriptPath)
+                    if let scriptPathWarning {
+                        Label(scriptPathWarning, systemImage: "exclamationmark.triangle")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                    TextEditor(text: $scriptContent)
+                        .font(.system(size: 12, design: .monospaced))
+                        .frame(height: 120)
+                    Text("Use either a script path or an inline script body.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     Picker("Schedule", selection: $schedule) {
                         ForEach(ScheduleOption.options) { opt in
                             Text(opt.displayName).tag(opt.id)
@@ -313,6 +356,16 @@ struct AutomationEditorSheet: View {
                     }
                     if schedule == "file_watch" {
                         TextField("Watch Path (folder or file)", text: $watchPath)
+                    }
+                }
+                Section("Automation Chain") {
+                    TextField("Depends On IDs", text: $dependsOn)
+                    TextField("Run After Success IDs", text: $triggersOnSuccess)
+                    if !availableAutomationIds.isEmpty {
+                        Text("Available IDs: \(availableAutomationIds.joined(separator: ", "))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(3)
                     }
                 }
                 Section("Organisation") {
@@ -340,15 +393,25 @@ struct AutomationEditorSheet: View {
                                                        isEnabled: true, scriptPath: "", schedule: "manual") }
                         auto.name = name; auto.description = description; auto.scriptPath = scriptPath
                         auto.schedule = schedule; auto.category = category; auto.isEnabled = isEnabled
+                        auto.scriptContent = scriptContent
                         auto.tags = tags.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                         auto.notes = notes; auto.watchPath = watchPath.isEmpty ? nil : watchPath
+                        auto.dependsOn = parseAutomationIds(dependsOn)
+                        auto.triggersOnSuccess = parseAutomationIds(triggersOnSuccess)
                         onSave(auto); dismiss()
                     }
-                    .disabled(name.isEmpty || scriptPath.isEmpty)
+                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !hasRunnableScript)
                 }
             }
         }
-        .frame(minWidth: 500, minHeight: 480)
+        .frame(minWidth: 560, minHeight: 640)
+    }
+
+    private func parseAutomationIds(_ value: String) -> [String] {
+        value
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 }
 

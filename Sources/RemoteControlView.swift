@@ -144,9 +144,9 @@ struct RemoteMachineCard: View {
     }
 
     private func checkConnection() {
-        monitoringManager.checkSSHConnection(to: machine.hostname)
+        monitoringManager.checkSSHConnection(to: machine.hostname, username: machine.username, port: machine.port)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            if let conn = monitoringManager.getSSHConnection(for: machine.hostname) {
+            if let conn = monitoringManager.getSSHConnection(to: machine.hostname, username: machine.username) {
                 machine.isConnected         = conn.isConnected
                 machine.lastConnectionCheck = conn.lastCheck
                 onChanged()
@@ -209,7 +209,6 @@ struct AddRemoteMachineSheet: View {
                     TextField("Hostname/IP", text: $hostname)
                     TextField("Username",    text: $username)
                     TextField("Port",        text: $port)
-                        .keyboardType(.numberPad)
                 }
             }
             .navigationTitle("Add Remote Machine")

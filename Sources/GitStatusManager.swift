@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct GitRepo: Identifiable {
     let id = UUID()
@@ -18,13 +19,21 @@ class GitStatusManager: NSObject, ObservableObject {
     @Published var isRefreshing = false
     @Published var lastRefreshed: Date?
 
+    static let defaultScanPathsRaw: String = {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        return "\(home)/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub"
+    }()
+
     /// Directories to scan for git repos (add yours here or configure via Settings)
-    @AppStorage("gitScanPaths") var scanPathsRaw: String = "~/Documents,~/Developer,~/Projects"
+    @AppStorage("gitScanPaths") var scanPathsRaw: String = GitStatusManager.defaultScanPathsRaw
 
     var scanPaths: [String] {
         scanPathsRaw
-            .split(separator: ",")
+            .split { character in
+                character == "," || character == "\n" || character == ";"
+            }
             .map { NSString(string: $0.trimmingCharacters(in: .whitespaces)).expandingTildeInPath }
+            .filter { !$0.isEmpty }
     }
 
     func refresh() {

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "scan_roots": [
+    "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub"
+  ],
+  "max_depth": 4,
+  "ignore_names": [
+    ".build",
+    ".git",
+    "DerivedData",
+    "node_modules",
+    "__pycache__",
+    ".venv",
+    "venv"
+  ]
+}
