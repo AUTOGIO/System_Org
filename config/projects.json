@@ -40,6 +40,16 @@
       "daily_cmd": "",
       "daily_requires_env": "",
       "tags": ["swift", "swiftui", "swiftdata", "personal-system", "local-first"]
+    },
+    {
+      "id": "home_automation",
+      "name": "Apple Home Automation",
+      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Projects (Essential)/Homebridge_Project",
+      "role": "home_infrastructure",
+      "validate_cmd": "launchctl list com.giovannini.homeassistant.native",
+      "daily_cmd": "",
+      "daily_requires_env": "",
+      "tags": ["homeassistant", "homekit", "apple-home", "tuya", "local-first", "always-on"]
     }
   ]
 }
