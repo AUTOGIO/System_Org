@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-06T03:35:14.864911+00:00",
+  "scan_roots": [
+    "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub"
+  ],
+  "repos": [
+    {
+      "name": "claude-skills-os",
+      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/claude-skills-os",
+      "group": "tooling",
+      "status": "tooling",
+      "active_project": false,
+      "languages": [
+        "node"
+      ],
+      "validation_hint": "npm run build",
+      "git": {
+        "branch": "main",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "FOKS_BLOOMBERG",
+      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/FOKS_BLOOMBERG",
+      "group": "local_app",
+      "status": "managed",
+      "active_project": true,
+      "languages": [
+        "swift"
+      ],
+      "validation_hint": "scripts/validate.sh",
+      "git": {
+        "branch": "main",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "fulofilo-analytics",
+      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/fulofilo-analytics",
+      "group": "business_automation",
+      "status": "managed",
+      "active_project": true,
+      "languages": [
+        "python"
+      ],
+      "validation_hint": "make",
+      "git": {
+        "branch": "main",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "PersonalLifeOS",
+      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/PersonalLifeOS",
+      "group": "personal_system",
+      "status": "managed",
+      "active_project": true,
+      "languages": [
+        "docs"
+      ],
+      "validation_hint": "",
+      "git": {
+        "branch": "main",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "System_Org 2",
+      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2",
+      "group": "core_system",
+      "status": "managed",
+      "active_project": true,
+      "languages": [
+        "swift"
+      ],
+      "validation_hint": "swift build",
+      "git": {
+        "branch": "main",
+        "dirty_count": 1
+      }
+    }
+  ]
+}
