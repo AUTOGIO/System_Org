@@ -155,16 +155,14 @@ fulofilo-analytics:
   make automation-validate-data-integrity
   make automation-run-daily
 
-giovannini-finance:
-  cd finance-tracker && npm run build
-  cd Personal_Tracker_macros && uvicorn app.main:app --port 8012
-
-GMC:
-  npm run build
-  cd .GMC_TUI_DJANGO && python manage.py check
-
 PersonalLifeOS:
-  python manage.py check
+  xcodebuild -project LifeOS.xcodeproj -scheme LifeOS build -quiet
+
+FOKS_BLOOMBERG:
+  scripts/validate.sh
+
+System_Org 2:
+  swift build
 REPORT
 }
 
