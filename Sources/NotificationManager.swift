@@ -2,6 +2,7 @@ import Foundation
 import UserNotifications
 import AppKit
 
+@MainActor
 class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
     @Published var isAuthorized = false
 
@@ -15,15 +16,14 @@ class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterD
 
     func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { [weak self] granted, _ in
-            DispatchQueue.main.async { self?.isAuthorized = granted }
+            Task { @MainActor [weak self] in self?.isAuthorized = granted }
         }
     }
 
     private func checkAuthorization() {
         UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
-            DispatchQueue.main.async {
-                self?.isAuthorized = settings.authorizationStatus == .authorized
-            }
+            let authorized = settings.authorizationStatus == .authorized
+            Task { @MainActor [weak self] in self?.isAuthorized = authorized }
         }
     }
 
@@ -66,23 +66,27 @@ class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterD
         let request = UNNotificationRequest(
             identifier: "\(identifier)-\(Date().timeIntervalSince1970)",
             content: content,
-            trigger: nil   // deliver immediately
+            trigger: nil
         )
         UNUserNotificationCenter.current().add(request)
     }
 
     // Bring app to foreground when notification tapped
-    func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                 didReceive response: UNNotificationResponse,
-                                 withCompletionHandler completionHandler: @escaping () -> Void) {
-        NSApp.activate(ignoringOtherApps: true)
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        Task { @MainActor in NSApp.activate(ignoringOtherApps: true) }
         completionHandler()
     }
 
     // Show banner even when app is in foreground
-    func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                 willPresent notification: UNNotification,
-                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
         completionHandler([.banner, .sound])
     }
 }

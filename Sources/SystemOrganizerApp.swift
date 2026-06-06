@@ -73,8 +73,8 @@ struct SystemOrganizerApp: App {
 
     private func registerGlobalHotkey() {
         // Requires Accessibility permission — request it gracefully
-        let options: [String: Any] = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: false]
-        guard AXIsProcessTrustedWithOptions(options as CFDictionary) else {
+        let isTrusted = nonisolatedAccessibilityCheck()
+        guard isTrusted else {
             print("Accessibility not granted — global hotkey disabled. Enable in System Settings → Privacy.")
             return
         }
@@ -83,10 +83,15 @@ struct SystemOrganizerApp: App {
             // ⌘⌥Space  (keyCode 49 = Space)
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             if flags == [.command, .option] && event.keyCode == 49 {
-                DispatchQueue.main.async {
-                    NSApp.activate(ignoringOtherApps: true)
-                }
+                Task { @MainActor in NSApp.activate(ignoringOtherApps: true) }
             }
         }
+    }
+
+    nonisolated private func nonisolatedAccessibilityCheck() -> Bool {
+        // kAXTrustedCheckOptionPrompt is a CFString constant — safe to access nonisolated
+        let key = "AXTrustedCheckOptionPrompt"
+        let options: [String: Any] = [key: false]
+        return AXIsProcessTrustedWithOptions(options as CFDictionary)
     }
 }

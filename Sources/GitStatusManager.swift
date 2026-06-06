@@ -14,6 +14,7 @@ struct GitRepo: Identifiable {
     var behindCount: Int = 0   // commits behind remote
 }
 
+@MainActor
 class GitStatusManager: NSObject, ObservableObject {
     @Published var repos: [GitRepo] = []
     @Published var isRefreshing = false
@@ -38,28 +39,27 @@ class GitStatusManager: NSObject, ObservableObject {
 
     func refresh() {
         isRefreshing = true
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let self else { return }
+        let paths = scanPaths
+        Task.detached(priority: .utility) { [weak self] in
             var found: [GitRepo] = []
-            for base in self.scanPaths {
-                found += self.discoverRepos(in: base)
+            for base in paths {
+                found += self?.discoverRepos(in: base) ?? []
             }
-            // Sort: dirty first, then alphabetically
             found.sort { lhs, rhs in
                 if lhs.isDirty != rhs.isDirty { return lhs.isDirty }
                 return lhs.name < rhs.name
             }
-            DispatchQueue.main.async {
-                self.repos = found
-                self.isRefreshing = false
-                self.lastRefreshed = Date()
+            await MainActor.run { [weak self] in
+                self?.repos = found
+                self?.isRefreshing = false
+                self?.lastRefreshed = Date()
             }
         }
     }
 
     // MARK: - Discovery
 
-    private func discoverRepos(in directory: String) -> [GitRepo] {
+    nonisolated private func discoverRepos(in directory: String) -> [GitRepo] {
         guard FileManager.default.fileExists(atPath: directory) else { return [] }
         var results: [GitRepo] = []
 
@@ -80,13 +80,13 @@ class GitStatusManager: NSObject, ObservableObject {
         return results
     }
 
-    private func isGitRepo(_ path: String) -> Bool {
+    nonisolated private func isGitRepo(_ path: String) -> Bool {
         FileManager.default.fileExists(atPath: (path as NSString).appendingPathComponent(".git"))
     }
 
     // MARK: - Build repo info
 
-    private func buildRepo(at path: String) -> GitRepo {
+    nonisolated private func buildRepo(at path: String) -> GitRepo {
         var repo = GitRepo(path: path)
         repo.branch        = git(["rev-parse", "--abbrev-ref", "HEAD"], at: path).trimmed
         repo.lastCommitMessage = git(["log", "-1", "--pretty=%s"], at: path).trimmed
@@ -107,7 +107,7 @@ class GitStatusManager: NSObject, ObservableObject {
     }
 
     @discardableResult
-    private func git(_ args: [String], at path: String) -> String {
+    nonisolated private func git(_ args: [String], at path: String) -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
         process.arguments = args

@@ -1,12 +1,13 @@
 import Foundation
 import Darwin.Mach
 
+@MainActor
 class MonitoringManager: NSObject, ObservableObject {
     @Published var automationStatus: [String: AutomationStatus] = [:]
     @Published var metrics = SystemMetrics.empty
 
     private var sshConnections: [String: SSHConnection] = [:]
-    private var metricsTimer: Timer?
+    nonisolated(unsafe) var metricsTimer: Timer?
     private var previousCPUTicks: CPUTicks?
     
     override init() {
@@ -27,43 +28,26 @@ class MonitoringManager: NSObject, ObservableObject {
     }
     
     func checkSSHConnection(to host: String, username: String? = nil, port: Int = 22) {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        let target = username.map { "\($0)@\(host)" } ?? host
+        let portStr = String(port)
+        Task.detached(priority: .userInitiated) { [weak self] in
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
-            let target = username.map { "\($0)@\(host)" } ?? host
-            process.arguments = [
-                "-o", "ConnectTimeout=5",
-                "-o", "BatchMode=yes",
-                "-p", String(port),
-                target,
-                "echo", "OK"
-            ]
-            
+            process.arguments = ["-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+                                  "-p", portStr, target, "echo", "OK"]
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = pipe
-            
+            let isConnected: Bool
             do {
                 try process.run()
                 process.waitUntilExit()
-                
-                let isConnected = process.terminationStatus == 0
-                
-                DispatchQueue.main.async {
-                    self?.sshConnections[target] = SSHConnection(
-                        host: target,
-                        isConnected: isConnected,
-                        lastCheck: Date()
-                    )
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self?.sshConnections[target] = SSHConnection(
-                        host: target,
-                        isConnected: false,
-                        lastCheck: Date()
-                    )
-                }
+                isConnected = process.terminationStatus == 0
+            } catch { isConnected = false }
+            await MainActor.run { [weak self] in
+                self?.sshConnections[target] = SSHConnection(host: target,
+                                                              isConnected: isConnected,
+                                                              lastCheck: Date())
             }
         }
     }

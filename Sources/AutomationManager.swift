@@ -2,6 +2,7 @@ import Foundation
 
 // MARK: - AutomationManager
 
+@MainActor
 class AutomationManager: NSObject, ObservableObject {
     @Published var automations: [AutomationModel] = []
     @Published var runningAutomations: Set<String> = []
@@ -9,8 +10,8 @@ class AutomationManager: NSObject, ObservableObject {
     @Published var runHistory: [RunRecord] = []
 
     private let processManager = ProcessManager()
-    private var schedulers: [String: Timer] = [:]
-    private var fileWatchers: [String: DispatchSourceFileSystemObject] = [:]
+    nonisolated(unsafe) var schedulers: [String: Timer] = [:]
+    nonisolated(unsafe) var fileWatchers: [String: DispatchSourceFileSystemObject] = [:]
 
     // MARK: - Storage URLs
 
@@ -439,7 +440,7 @@ class AutomationManager: NSObject, ObservableObject {
         ]
     }
 
-    static func expandPath(_ path: String) -> String {
+    nonisolated static func expandPath(_ path: String) -> String {
         (path as NSString)
             .expandingTildeInPath
             .replacingOccurrences(of: "$HOME", with: NSHomeDirectory())
