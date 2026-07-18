@@ -3,6 +3,7 @@
 .AppleDouble
 .LSOverride
 Icon
+Icon?
 ._*
 .DocumentRevisions-V100
 .fseventsd
@@ -30,6 +31,7 @@ DerivedData/
 # ── Build artefacts ────────────────────────────────────
 .build/
 build/
+dist/
 *.o
 *.a
 *.app
@@ -42,6 +44,14 @@ build/
 *.key
 Secrets.swift
 
-# ── Runtime caches ─────────────────────────────────────
+# ── Python / Node junk ─────────────────────────────────
 __pycache__/
 *.pyc
+.venv/
+venv/
+node_modules/
+
+# ── Scratch ────────────────────────────────────────────
+logs/
+tmp/
+*.log
