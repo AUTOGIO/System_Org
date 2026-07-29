@@ -180,6 +180,8 @@ struct RemoteMachineCard: View {
     private func runRemoteCommand(_ cmd: String) {
         commandOutput = "Running…"
         isRunningCmd  = true
+        let port = machine.port
+        let target = "\(machine.username)@\(machine.hostname)"
 
         DispatchQueue.global(qos: .userInitiated).async {
             let process = Process()
@@ -187,8 +189,8 @@ struct RemoteMachineCard: View {
             process.arguments = [
                 "-o", "ConnectTimeout=10",
                 "-o", "BatchMode=yes",
-                "-p", String(machine.port),
-                "\(machine.username)@\(machine.hostname)", cmd
+                "-p", String(port),
+                target, cmd
             ]
             let pipe = Pipe()
             process.standardOutput = pipe
