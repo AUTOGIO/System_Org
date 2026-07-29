@@ -6,7 +6,7 @@ System Organizer is a local-first macOS automation and repo-operations hub built
 
 - Native SwiftUI app and menu bar entry.
 - Automation manager with JSON persistence, schedules, file watchers, chaining, run history, and notifications.
-- Repo inventory scanner for `/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub`.
+- Repo inventory scanner for ``$HOME/Documents/GitHub``.
 - Repo state summary table.
 - Repo health check with read-only Git and validation-configuration findings.
 - Active project validation from `config/projects.json`.

@@ -115,7 +115,7 @@ def infer_group(name: str, path: Path, languages: list[str]) -> str:
 def discover_repos(scan_roots: list[str], max_depth: int, ignore_names: set[str]) -> list[Path]:
     repos: list[Path] = []
     for root_text in scan_roots:
-        root = Path(os.path.expanduser(root_text)).resolve()
+        root = Path(os.path.expanduser(os.path.expandvars(root_text))).resolve()
         if not root.is_dir():
             continue
         for current, dirs, _files in os.walk(root):
@@ -134,12 +134,12 @@ def discover_repos(scan_roots: list[str], max_depth: int, ignore_names: set[str]
 def main() -> int:
     roots_config = load_json(ROOTS_FILE, {})
     projects_config = load_json(PROJECTS_FILE, {"projects": []})
-    scan_roots = roots_config.get("scan_roots") or ["/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub"]
+    scan_roots = roots_config.get("scan_roots") or [str(Path.home() / "Documents/GitHub")]
     max_depth = int(roots_config.get("max_depth") or 4)
     ignore_names = set(roots_config.get("ignore_names") or [])
 
     active_paths = {
-        os.path.abspath(os.path.expanduser(str(p.get("path"))))
+        os.path.abspath(os.path.expanduser(os.path.expandvars(str(p.get("path")))))
         for p in projects_config.get("projects", [])
         if isinstance(p, dict) and p.get("path")
     }

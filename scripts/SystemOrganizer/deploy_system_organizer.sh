@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-PROJECT="/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2"
+PROJECT="$(cd "$(dirname "$0")/../.." && pwd)"
 APP_NAME="SystemOrganizer"
 DISPLAY_NAME="System Organizer"
 BUNDLE_ID="com.giovannini.SystemOrganizer"
@@ -97,6 +97,8 @@ write_info_plist() {
   <string>System Organizer sends local notifications when automations complete or fail.</string>
   <key>NSSupportsAutomaticGraphicsSwitching</key>
   <true/>
+  <key>NSAccessibilityUsageDescription</key>
+  <string>System Organizer uses Accessibility to register a global hotkey for quick launch.</string>
 </dict>
 </plist>
 PLIST
@@ -111,7 +113,9 @@ package_bundle() {
   /bin/chmod +x "$STAGING_BUNDLE/Contents/MacOS/$APP_NAME"
   write_info_plist "$STAGING_BUNDLE/Contents/Info.plist"
 
-  if [[ -f "$PROJECT/logo.jpg" ]]; then
+  if [[ -f "$PROJECT/assets/logo.png" ]]; then
+    /bin/cp "$PROJECT/assets/logo.png" "$STAGING_BUNDLE/Contents/Resources/logo.png"
+  elif [[ -f "$PROJECT/logo.jpg" ]]; then
     /bin/cp "$PROJECT/logo.jpg" "$STAGING_BUNDLE/Contents/Resources/logo.jpg"
   fi
 

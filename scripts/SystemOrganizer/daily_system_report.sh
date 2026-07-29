@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-REPORT_DIR="/Users/giovannini_nuovo/Desktop/System_Reports"
+REPORT_DIR="${HOME}/Desktop/System_Reports"
 REPORT_FILE="$REPORT_DIR/$(/bin/date +%F)_system_report.txt"
 
 mkdir -p "$REPORT_DIR"

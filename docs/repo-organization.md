@@ -18,37 +18,37 @@ Inventory everything. Manage only what matters. Automate only what is safe.
 Refresh the full repo inventory:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/refresh_repo_inventory.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/refresh_repo_inventory.sh
 ```
 
 Show a readable inventory report:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_inventory_report.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/repo_inventory_report.sh
 ```
 
 Show the compact repo state table:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_state_summary.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/repo_state_summary.sh
 ```
 
 Check Git/repo health without running builds:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_health_check.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/repo_health_check.sh
 ```
 
 Run active project validation:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/project_safe_validation.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/project_safe_validation.sh
 ```
 
 Install/update the live System Organizer app automation entries:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/configure_system_organizer.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/configure_system_organizer.sh
 ```
 
 This creates a timestamped backup of:
@@ -63,7 +63,7 @@ It then updates repo-management automations to point at this repo's current
 Deploy the local macOS app:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/deploy_system_organizer.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/deploy_system_organizer.sh
 ```
 
 ## Recommended Sequence

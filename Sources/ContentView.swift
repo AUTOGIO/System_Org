@@ -7,7 +7,7 @@ struct ContentView: View {
 
     @State private var selectedTab: TabSelection = .dashboard
 
-    enum TabSelection: CaseIterable {
+    enum TabSelection: String, CaseIterable {
         case dashboard, automations, ai, remote, calendar, obsidian, settings
 
         var icon: String {
@@ -32,6 +32,19 @@ struct ContentView: View {
             case .obsidian:    return "Obsidian"
             case .settings:    return "Settings"
             }
+        }
+
+        /// Remote / Obsidian stay hidden until the user has saved config files.
+        static var visibleCases: [TabSelection] {
+            var tabs: [TabSelection] = [.dashboard, .automations, .ai, .calendar, .settings]
+            if FeatureFlags.remoteConfigured {
+                tabs.insert(.remote, at: 3)
+            }
+            if FeatureFlags.obsidianConfigured {
+                let idx = tabs.firstIndex(of: .settings) ?? tabs.count
+                tabs.insert(.obsidian, at: idx)
+            }
+            return tabs
         }
     }
 
@@ -70,19 +83,23 @@ struct ContentView: View {
                         .tag(TabSelection.automations)
                     AIView()
                         .tag(TabSelection.ai)
-                    RemoteControlView()
-                        .tag(TabSelection.remote)
+                    if FeatureFlags.remoteConfigured {
+                        RemoteControlView()
+                            .tag(TabSelection.remote)
+                    }
                     CalendarView()
                         .tag(TabSelection.calendar)
-                    ObsidianView()
-                        .tag(TabSelection.obsidian)
+                    if FeatureFlags.obsidianConfigured {
+                        ObsidianView()
+                            .tag(TabSelection.obsidian)
+                    }
                     SettingsView()
                         .tag(TabSelection.settings)
                 }
 
                 // ── Tab Bar ───────────────────────────────────────────
                 HStack(spacing: 0) {
-                    ForEach(TabSelection.allCases, id: \.self) { tab in
+                    ForEach(TabSelection.visibleCases, id: \.self) { tab in
                         TabBarButton(
                             icon:       tab.icon,
                             label:      tab.label,
@@ -107,6 +124,28 @@ struct ContentView: View {
         default:
             return 0
         }
+    }
+}
+
+// MARK: - FeatureFlags
+
+/// File-based feature gates (nonisolated — safe for SwiftUI static tab lists).
+enum FeatureFlags {
+    static var remoteConfigured: Bool {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let url = base.appendingPathComponent("SystemOrganizer/remote_machines.json")
+        guard FileManager.default.fileExists(atPath: url.path),
+              let data = try? Data(contentsOf: url),
+              let machines = try? JSONDecoder().decode([RemoteMachine].self, from: data) else {
+            return false
+        }
+        return !machines.isEmpty
+    }
+
+    static var obsidianConfigured: Bool {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let url = base.appendingPathComponent("SystemOrganizer/obsidian_vaults.json")
+        return FileManager.default.fileExists(atPath: url.path)
     }
 }
 

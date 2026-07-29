@@ -15,7 +15,7 @@ struct ChatMessage: Identifiable, @unchecked Sendable {
 
 // MARK: - OllamaManager
 //
-// ViewModel wrapper around PersonalOSKit.OllamaClient.
+// ViewModel wrapper around PersonalOSKit.OllamaClient (sibling package ../PersonalOSKit).
 // Owns all @Published state for SwiftUI binding.
 // Network calls are fully async/await — no callback-based URLSession.
 

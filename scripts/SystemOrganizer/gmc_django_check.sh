@@ -1,5 +1,4 @@
 #!/bin/zsh
-# DISABLED: GMC project is not in the current active portfolio.
-# This script is a no-op placeholder.
-echo "gmc_django_check: GMC project not active — skipping."
+# Retained as an explicit no-op so old automation IDs fail closed cleanly.
+echo "RETIRED: gmc_django_check — stub removed from active portfolio. Use gmc_build_frontend if needed."
 exit 0

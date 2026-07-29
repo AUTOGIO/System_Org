@@ -11,9 +11,9 @@ The app is the control surface for local scripts, project health, repo state, Ob
 ```text
 Installed app: /Applications/SystemOrganizer.app
 Architecture:  arm64
-Target OS:     macOS 26.6
+Target OS:     macOS 13+ (Package.swift); deploy Info.plist currently 26.0
 State folder:  ~/Library/Application Support/SystemOrganizer
-Scripts root:  /Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2/scripts/SystemOrganizer
+Scripts root:  `$HOME/Documents/GitHub/System_Org 2` (or this clone)/scripts/SystemOrganizer
 ```
 
 ## Main Surfaces

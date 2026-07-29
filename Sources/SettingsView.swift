@@ -134,10 +134,57 @@ struct SettingsView: View {
                     }
                 }
 
+                // ── Integrations (tabs unlock when configured) ───────
+                SettingsSectionView(title: "Integrations") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Obsidian and Remote tabs stay hidden until configured.")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+
+                        HStack {
+                            Text(FeatureFlags.obsidianConfigured
+                                  ? "Obsidian: configured"
+                                  : "Obsidian: not configured")
+                                .font(.caption)
+                            Spacer()
+                            Button(FeatureFlags.obsidianConfigured ? "Reset" : "Enable") {
+                                if FeatureFlags.obsidianConfigured {
+                                    ObsidianVaultStore.clearConfiguredVaults()
+                                } else {
+                                    ObsidianVaultStore.enableDefaultConfiguration()
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+
+                        HStack {
+                            Text(FeatureFlags.remoteConfigured
+                                  ? "Remote: configured"
+                                  : "Remote: not configured")
+                                .font(.caption)
+                            Spacer()
+                            Button(FeatureFlags.remoteConfigured ? "Reset" : "Enable") {
+                                if FeatureFlags.remoteConfigured {
+                                    AutomationManager.clearRemoteMachines()
+                                } else {
+                                    AutomationManager.enablePlaceholderRemoteMachine()
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+
+                        Text("After Enable, relaunch the app to show the new tab.")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
                 // ── About ─────────────────────────────────────────────
                 SettingsSectionView(title: "About") {
                     VStack(alignment: .leading, spacing: 8) {
-                        SettingsInfoRow(label: "App", value: "System Organizer 2.0")
+                        SettingsInfoRow(label: "App", value: "System Organizer 2.1.0")
                         SettingsInfoRow(label: "macOS", value: ProcessInfo.processInfo.operatingSystemVersionString)
                         SettingsInfoRow(label: "Cores", value: "\(ProcessInfo.processInfo.activeProcessorCount)")
                     }

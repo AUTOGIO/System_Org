@@ -58,7 +58,9 @@ def main() -> int:
 
         pid = _as_str(p.get("id")).strip()
         name = _as_str(p.get("name")).strip() or pid
-        path = os.path.expanduser(_as_str(p.get("path")).strip())
+        path = os.path.abspath(
+            os.path.expanduser(os.path.expandvars(_as_str(p.get("path")).strip()))
+        )
         validate_cmd = _as_str(p.get("validate_cmd")).strip()
         daily_cmd = _as_str(p.get("daily_cmd")).strip()
         daily_requires_env = _as_str(p.get("daily_requires_env")).strip()

@@ -1,9 +1,10 @@
 #!/bin/zsh
 set -euo pipefail
 
-DESKTOP="/Users/giovannini_nuovo/Desktop"
-ARCHIVE_ROOT="/Users/giovannini_nuovo/Documents/Desktop_Archive"
+DESKTOP="${HOME}/Desktop"
+ARCHIVE_ROOT="${HOME}/Documents/Desktop_Archive"
 DATE_PREFIX="$(/bin/date +%F)"
+DRY_RUN="${DRY_RUN:-0}"
 
 mkdir -p "$ARCHIVE_ROOT"/{Screenshots,Images,PDFs,Documents,Archives,Videos,Audio,Other}
 
@@ -59,8 +60,16 @@ for item in "$DESKTOP"/*(N); do
   renamed="${DATE_PREFIX}_${name}"
   destination="$(unique_destination "$ARCHIVE_ROOT/$category/$renamed")"
 
-  /bin/mv "$item" "$destination"
+  if [[ "$DRY_RUN" == "1" ]]; then
+    echo "DRY_RUN: would move $item -> $destination"
+  else
+    /bin/mv "$item" "$destination"
+  fi
   moved_count=$((moved_count + 1))
 done
 
-echo "Renamed and moved $moved_count Desktop item(s) into $ARCHIVE_ROOT by type."
+if [[ "$DRY_RUN" == "1" ]]; then
+  echo "Dry-run: planned $moved_count Desktop item(s) into $ARCHIVE_ROOT by type."
+else
+  echo "Renamed and moved $moved_count Desktop item(s) into $ARCHIVE_ROOT by type."
+fi

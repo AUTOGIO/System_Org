@@ -3,21 +3,21 @@
 ## Debug Build
 
 ```bash
-cd /Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2
+cd "$(git rev-parse --show-toplevel)"
 swift build
 ```
 
 ## Release Build
 
 ```bash
-cd /Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2
+cd "$(git rev-parse --show-toplevel)"
 swift build -c release
 ```
 
 The release binary is:
 
 ```text
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2/.build/release/SystemOrganizer
+.build/release/SystemOrganizer
 ```
 
 ## Local App Bundle
@@ -44,7 +44,7 @@ scripts/SystemOrganizer/project_safe_validation.sh
 For this personal Apple Silicon workstation, deploy the real local app with:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/deploy_system_organizer.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/deploy_system_organizer.sh
 ```
 
 The deploy script:

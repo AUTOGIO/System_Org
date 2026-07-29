@@ -166,11 +166,16 @@ enum ObsidianVaultStore {
         return dir.appendingPathComponent("obsidian_vaults.json")
     }
 
+    /// True only when the user has saved vaults (tab stays hidden until then).
+    static var hasConfiguredVaults: Bool {
+        FileManager.default.fileExists(atPath: vaultsURL.path)
+    }
+
     static func loadVaults() -> [ObsidianVault] {
         guard let data = try? Data(contentsOf: vaultsURL),
               let decoded = try? JSONDecoder().decode([ObsidianVault].self, from: data),
               !decoded.isEmpty else {
-            return defaultVaults
+            return []
         }
         return decoded
     }
@@ -178,6 +183,14 @@ enum ObsidianVaultStore {
     static func saveVaults(_ vaults: [ObsidianVault]) {
         guard let data = try? JSONEncoder().encode(vaults) else { return }
         try? data.write(to: vaultsURL, options: .atomic)
+    }
+
+    static func enableDefaultConfiguration() {
+        saveVaults(defaultVaults)
+    }
+
+    static func clearConfiguredVaults() {
+        try? FileManager.default.removeItem(at: vaultsURL)
     }
 }
 

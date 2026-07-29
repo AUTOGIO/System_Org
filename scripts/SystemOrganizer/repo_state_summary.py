@@ -48,7 +48,7 @@ def projects_by_path(projects: dict[str, Any]) -> dict[str, dict[str, Any]]:
     result: dict[str, dict[str, Any]] = {}
     for project in projects.get("projects", []):
         if isinstance(project, dict) and project.get("path"):
-            path = os.path.abspath(os.path.expanduser(str(project["path"])))
+            path = os.path.abspath(os.path.expanduser(os.path.expandvars(str(project["path"]))))
             result[path] = project
     return result
 
@@ -141,7 +141,7 @@ def main() -> int:
     for repo in inventory.get("repos", []):
         if not isinstance(repo, dict):
             continue
-        path = Path(os.path.expanduser(str(repo.get("path") or "")))
+        path = Path(os.path.expanduser(os.path.expandvars(str(repo.get("path") or ""))))
         abs_path = os.path.abspath(str(path))
         project = project_map.get(abs_path)
         state = git_state(path)

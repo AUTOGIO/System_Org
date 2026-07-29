@@ -3,7 +3,7 @@
 System Organizer is deployed locally with one real command.
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/deploy_system_organizer.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/deploy_system_organizer.sh
 ```
 
 ## What The Deploy Script Does
@@ -23,10 +23,10 @@ System Organizer is deployed locally with one real command.
 ## Current Target
 
 ```text
-Target OS:     macOS 26.6
+Target OS:     macOS 13+ (Package.swift); deploy Info.plist currently 26.0
 Architecture:  arm64
 Install path:  /Applications/SystemOrganizer.app
-Repo path:     /Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2
+Repo path:     `$HOME/Documents/GitHub/System_Org 2` (or this clone)
 ```
 
 ## Post-Deploy Checks
@@ -41,7 +41,7 @@ pgrep -x SystemOrganizer
 ## Operational Checks
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_state_summary.sh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_health_check.sh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/project_safe_validation.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/repo_state_summary.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/repo_health_check.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/project_safe_validation.sh
 ```

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "scan_roots": [
-    "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub"
+    "$HOME/Documents/GitHub"
   ],
   "max_depth": 4,
   "ignore_names": [

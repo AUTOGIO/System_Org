@@ -1,13 +1,58 @@
 {
   "version": 1,
-  "generated_at": "2026-06-06T03:35:14.864911+00:00",
+  "generated_at": "2026-07-29T14:36:46.442335+00:00",
   "scan_roots": [
-    "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub"
+    "$HOME/Documents/GitHub"
   ],
   "repos": [
     {
+      "name": "AI_Engineering_OS",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/AI_Engineering_OS",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "docs"
+      ],
+      "validation_hint": "",
+      "git": {
+        "branch": "master",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "AUTOGIO_PIOS",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/AUTOGIO_PIOS",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "docs"
+      ],
+      "validation_hint": "",
+      "git": {
+        "branch": "main",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "BEATS",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/BEATS",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "docs"
+      ],
+      "validation_hint": "",
+      "git": {
+        "branch": "main",
+        "dirty_count": 16
+      }
+    },
+    {
       "name": "claude-skills-os",
-      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/claude-skills-os",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/claude-skills-os",
       "group": "tooling",
       "status": "tooling",
       "active_project": false,
@@ -21,23 +66,53 @@
       }
     },
     {
-      "name": "FOKS_BLOOMBERG",
-      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/FOKS_BLOOMBERG",
-      "group": "local_app",
-      "status": "managed",
-      "active_project": true,
+      "name": "codex-beginners-guide",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/codex-beginners-guide",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "docs"
+      ],
+      "validation_hint": "",
+      "git": {
+        "branch": "feature/practice-first-guide",
+        "dirty_count": 4
+      }
+    },
+    {
+      "name": "CodexCheatSheet",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/CodexCheatSheet",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
       "languages": [
         "swift"
       ],
-      "validation_hint": "scripts/validate.sh",
+      "validation_hint": "swift build",
       "git": {
-        "branch": "main",
-        "dirty_count": 0
+        "branch": "master",
+        "dirty_count": 1
+      }
+    },
+    {
+      "name": "financas-2026",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/financas-2026",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "python"
+      ],
+      "validation_hint": "make",
+      "git": {
+        "branch": "master",
+        "dirty_count": 2
       }
     },
     {
       "name": "fulofilo-analytics",
-      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/fulofilo-analytics",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/fulofilo-analytics",
       "group": "business_automation",
       "status": "managed",
       "active_project": true,
@@ -47,15 +122,15 @@
       "validation_hint": "make",
       "git": {
         "branch": "main",
-        "dirty_count": 0
+        "dirty_count": 40
       }
     },
     {
-      "name": "PersonalLifeOS",
-      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/PersonalLifeOS",
-      "group": "personal_system",
-      "status": "managed",
-      "active_project": true,
+      "name": "GMC",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/GMC",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
       "languages": [
         "docs"
       ],
@@ -66,8 +141,113 @@
       }
     },
     {
+      "name": "Homebridge_Project",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/Homebridge_Project",
+      "group": "reference",
+      "status": "managed",
+      "active_project": true,
+      "languages": [
+        "docs"
+      ],
+      "validation_hint": "make",
+      "git": {
+        "branch": "main",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "ipad-stream-deck-console",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/ipad-stream-deck-console",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "docs"
+      ],
+      "validation_hint": "",
+      "git": {
+        "branch": "master",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "ItaliaOS",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/ItaliaOS",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "docs"
+      ],
+      "validation_hint": "",
+      "git": {
+        "branch": "main",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "LitoralPriceTracker",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/LitoralPriceTracker",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "swift"
+      ],
+      "validation_hint": "swift build",
+      "git": {
+        "branch": "main",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "MacHealthOS",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/MacHealthOS",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "swift"
+      ],
+      "validation_hint": "swift build",
+      "git": {
+        "branch": "master",
+        "dirty_count": 11
+      }
+    },
+    {
+      "name": "PersonalLifeOS",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/PersonalLifeOS",
+      "group": "personal_system",
+      "status": "managed",
+      "active_project": true,
+      "languages": [
+        "docs"
+      ],
+      "validation_hint": "",
+      "git": {
+        "branch": "fix/audit-remediation",
+        "dirty_count": 0
+      }
+    },
+    {
+      "name": "PersonalOSKit",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/PersonalOSKit",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "swift"
+      ],
+      "validation_hint": "swift build",
+      "git": {
+        "branch": "main",
+        "dirty_count": 0
+      }
+    },
+    {
       "name": "System_Org 2",
-      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/System_Org 2",
       "group": "core_system",
       "status": "managed",
       "active_project": true,
@@ -76,8 +256,38 @@
       ],
       "validation_hint": "swift build",
       "git": {
-        "branch": "main",
-        "dirty_count": 1
+        "branch": "fix/audit-remediation",
+        "dirty_count": 3
+      }
+    },
+    {
+      "name": "wakatime-m4-analytics",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/wakatime-m4-analytics",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "docs"
+      ],
+      "validation_hint": "make",
+      "git": {
+        "branch": "master",
+        "dirty_count": 19
+      }
+    },
+    {
+      "name": "WorkflowSuggesterPro",
+      "path": "/Users/eduardofgiovannini/Documents/GitHub/WorkflowSuggesterPro",
+      "group": "reference",
+      "status": "reference",
+      "active_project": false,
+      "languages": [
+        "swift"
+      ],
+      "validation_hint": "swift build",
+      "git": {
+        "branch": "master",
+        "dirty_count": 21
       }
     }
   ]

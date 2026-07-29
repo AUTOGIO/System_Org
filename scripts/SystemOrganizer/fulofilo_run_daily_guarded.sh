@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-PROJECT="/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/fulofilo-analytics"
+PROJECT="${HOME}/Documents/GitHub/fulofilo-analytics"
 
 cat <<'WARNING'
 This automation can modify fulofilo-analytics project data.

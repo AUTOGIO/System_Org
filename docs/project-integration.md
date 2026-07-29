@@ -10,10 +10,10 @@ projects.json       = active managed projects with safe validation commands
 ## Canonical Files
 
 ```text
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2/config/repo_roots.json
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2/config/repo_inventory.json
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2/config/repo_groups.json
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2/config/projects.json
+`$HOME/Documents/GitHub/System_Org 2` (or this clone)/config/repo_roots.json
+`$HOME/Documents/GitHub/System_Org 2` (or this clone)/config/repo_inventory.json
+`$HOME/Documents/GitHub/System_Org 2` (or this clone)/config/repo_groups.json
+`$HOME/Documents/GitHub/System_Org 2` (or this clone)/config/projects.json
 ```
 
 ## Active Managed Projects
@@ -38,31 +38,31 @@ projects.json       = active managed projects with safe validation commands
 Refresh all discovered repos:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/refresh_repo_inventory.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/refresh_repo_inventory.sh
 ```
 
 Show grouped inventory:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_inventory_report.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/repo_inventory_report.sh
 ```
 
 Show compact operational state:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_state_summary.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/repo_state_summary.sh
 ```
 
 Run read-only repo health:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_health_check.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/repo_health_check.sh
 ```
 
 Run active project validation:
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/project_safe_validation.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/project_safe_validation.sh
 ```
 
 ## App Automations
