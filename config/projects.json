@@ -12,16 +12,6 @@
       "tags": ["swift", "macos", "automation", "local-first", "core"]
     },
     {
-      "id": "foks_bloomberg",
-      "name": "FOKS Bloomberg",
-      "path": "$HOME/Documents/GitHub/FOKS_BLOOMBERG",
-      "role": "local_app",
-      "validate_cmd": "scripts/validate.sh",
-      "daily_cmd": "",
-      "daily_requires_env": "",
-      "tags": ["swift", "macos", "terminal", "local-first"]
-    },
-    {
       "id": "fulofilo_analytics",
       "name": "fulofilo-analytics",
       "path": "$HOME/Documents/GitHub/fulofilo-analytics",

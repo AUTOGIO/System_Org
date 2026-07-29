@@ -57,10 +57,16 @@ System Organizer is buildable and testable again on this Mac. Hardcoded former-u
 | Deploy PROJECT resolution | Resolves to this clone |
 | `../PersonalOSKit` present | Yes |
 
+## Deploy status (this workstation)
+
+- Installed: `/Applications/SystemOrganizer.app` v2.1.0
+- Launched and verified running after deploy
+- Accessibility usage string present in bundled Info.plist
+
 ## Remaining operator notes
 
 1. **PersonalOSKit** must stay checked out as a sibling of this repo on every build machine.
-2. **FOKS_Bloomberg** is still listed in `config/projects.json` but is not present locally — portfolio validation will report it missing until cloned or removed.
+2. **FOKS Bloomberg** was removed from `config/projects.json` (not present locally); re-add when cloned.
 3. **Evening / desktop / downloads** automations stay manual and gated; re-enable only after reviewing paths.
 4. Schedules still only fire while the app is running (no LaunchAgent) — documented limitation, not changed.
 
