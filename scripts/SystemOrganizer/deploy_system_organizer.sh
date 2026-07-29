@@ -48,8 +48,10 @@ build_release() {
   print_step "Build"
   cd "$PROJECT"
   require_command swift
-  /usr/bin/xcrun swift test
+  # Scratch outside iCloud Documents avoids Finder xattr codesign failures on *.xctest
+  /usr/bin/xcrun swift test --scratch-path /tmp/SystemOrganizer-spm-build
   /usr/bin/xcrun swift build -c release --arch arm64
+  /usr/bin/xattr -cr "$PROJECT/.build" 2>/dev/null || true
   require_file "$BINARY"
 }
 
