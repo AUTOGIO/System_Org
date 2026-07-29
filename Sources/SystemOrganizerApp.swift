@@ -2,13 +2,6 @@ import SwiftUI
 import ServiceManagement
 import AppKit
 
-/// Retains the global NSEvent monitor (must not be discarded — Apple docs).
-@MainActor
-private final class GlobalHotkeyMonitor {
-    static let shared = GlobalHotkeyMonitor()
-    var monitor: Any?
-}
-
 @main
 struct SystemOrganizerApp: App {
     @StateObject private var automationManager  = AutomationManager()
@@ -26,6 +19,24 @@ struct SystemOrganizerApp: App {
                 .environmentObject(gitStatusManager)
                 .environmentObject(notificationManager)
                 .onAppear { setupApp() }
+                .alert(
+                    "Run destructive automation?",
+                    isPresented: Binding(
+                        get: { automationManager.pendingDestructiveRun != nil },
+                        set: { if !$0 { automationManager.cancelPendingDestructiveRun() } }
+                    )
+                ) {
+                    Button("Cancel", role: .cancel) {
+                        automationManager.cancelPendingDestructiveRun()
+                    }
+                    Button("Run", role: .destructive) {
+                        automationManager.confirmPendingDestructiveRun()
+                    }
+                } message: {
+                    if let pending = automationManager.pendingDestructiveRun {
+                        Text("\(pending.name)\n\n\(pending.description)")
+                    }
+                }
         }
         .windowStyle(.hiddenTitleBar)
 
@@ -34,6 +45,24 @@ struct SystemOrganizerApp: App {
                 .environmentObject(automationManager)
                 .environmentObject(monitoringManager)
                 .environmentObject(ollamaManager)
+                .alert(
+                    "Run destructive automation?",
+                    isPresented: Binding(
+                        get: { automationManager.pendingDestructiveRun != nil },
+                        set: { if !$0 { automationManager.cancelPendingDestructiveRun() } }
+                    )
+                ) {
+                    Button("Cancel", role: .cancel) {
+                        automationManager.cancelPendingDestructiveRun()
+                    }
+                    Button("Run", role: .destructive) {
+                        automationManager.confirmPendingDestructiveRun()
+                    }
+                } message: {
+                    if let pending = automationManager.pendingDestructiveRun {
+                        Text("\(pending.name)\n\n\(pending.description)")
+                    }
+                }
         }
     }
 
@@ -44,7 +73,6 @@ struct SystemOrganizerApp: App {
         gitStatusManager.refresh()
         notificationManager.requestAuthorization()
         syncLaunchAtLoginState()
-        registerGlobalHotkey()
     }
 
     // MARK: - Launch at Login (SMAppService — macOS 13+)
@@ -66,38 +94,9 @@ struct SystemOrganizerApp: App {
     }
 
     private func syncLaunchAtLoginState() {
-        // Keep UserDefaults in sync with the actual system state
         let current = Self.isLaunchAtLoginEnabled
         if UserDefaults.standard.bool(forKey: "LaunchAtLogin") != current {
             UserDefaults.standard.set(current, forKey: "LaunchAtLogin")
         }
-    }
-
-    // MARK: - Global Hotkey  ⌘⌥Space → bring app forward
-
-    private func registerGlobalHotkey() {
-        // Requires Accessibility permission — request it gracefully
-        let isTrusted = nonisolatedAccessibilityCheck()
-        guard isTrusted else {
-            print("Accessibility not granted — global hotkey disabled. Enable in System Settings → Privacy.")
-            return
-        }
-
-        GlobalHotkeyMonitor.shared.monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
-            // ⌘⌥Space  (keyCode 49 = Space)
-            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            if flags == [.command, .option] && event.keyCode == 49 {
-                Task { @MainActor in
-                    NSApp.activate(ignoringOtherApps: true)
-                }
-            }
-        }
-    }
-
-    nonisolated private func nonisolatedAccessibilityCheck() -> Bool {
-        // kAXTrustedCheckOptionPrompt is a CFString constant — safe to access nonisolated
-        let key = "AXTrustedCheckOptionPrompt"
-        let options: [String: Any] = [key: false]
-        return AXIsProcessTrustedWithOptions(options as CFDictionary)
     }
 }

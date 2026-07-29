@@ -63,12 +63,21 @@ System Organizer is buildable and testable again on this Mac. Hardcoded former-u
 - Launched and verified running after deploy
 - Accessibility usage string present in bundled Info.plist
 
+## Round 2 (full fix — agreed scope)
+
+- All automation schedules forced to **manual**
+- Missing-project wrappers **retired** (morning/finance stubs; dead App Support entries removed)
+- Destructive runs require **in-app confirm**, then pass `CONFIRM_EVENING_SHUTDOWN` / `ALLOW_PROJECT_DATA_WRITES`
+- Obsidian + Remote tabs **hidden** until Settings → Integrations → Enable
+- Global hotkey **removed**
+- Ship: PR → merge `main` → redeploy
+
 ## Remaining operator notes
 
 1. **PersonalOSKit** must stay checked out as a sibling of this repo on every build machine.
-2. **FOKS Bloomberg** was removed from `config/projects.json` (not present locally); re-add when cloned.
-3. **Evening / desktop / downloads** automations stay manual and gated; re-enable only after reviewing paths.
-4. Schedules still only fire while the app is running (no LaunchAgent) — documented limitation, not changed.
+2. After Enable for Obsidian/Remote in Settings, **relaunch** to show tabs.
+3. Click through each **enabled** automation once in the UI (success criterion B).
+4. Schedules are manual only — no LaunchAgent.
 
 ## Files touched (high level)
 

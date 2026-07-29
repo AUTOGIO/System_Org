@@ -158,11 +158,11 @@ fulofilo-analytics:
 PersonalLifeOS:
   xcodebuild -project LifeOS.xcodeproj -scheme LifeOS build -quiet
 
-FOKS_BLOOMBERG:
-  scripts/validate.sh
-
 System_Org 2:
   swift build
+
+Homebridge_Project:
+  test -d .
 REPORT
 }
 

@@ -8,10 +8,23 @@ class AutomationManager: NSObject, ObservableObject {
     @Published var runningAutomations: Set<String> = []
     @Published var automationLogs: [String: [String]] = [:]
     @Published var runHistory: [RunRecord] = []
+    /// When set, the UI shows a confirmation alert before running.
+    @Published var pendingDestructiveRun: AutomationModel? = nil
 
-    private let processManager = ProcessManager()
+    private nonisolated(unsafe) let processManager = ProcessManager()
     nonisolated(unsafe) var schedulers: [String: Timer] = [:]
     nonisolated(unsafe) var fileWatchers: [String: DispatchSourceFileSystemObject] = [:]
+
+    /// Automations that mutate the desktop/downloads/session or guarded project data.
+    static let destructiveAutomationIDs: Set<String> = [
+        "organize_desktop",
+        "organize_desktop_to_documents",
+        "clean_downloads",
+        "clean_downloads_older_than_5_days",
+        "evening_shutdown",
+        "evening_shutdown_routine",
+        "fulofilo_run_daily_guarded",
+    ]
 
     // MARK: - Storage URLs
 
@@ -26,6 +39,11 @@ class AutomationManager: NSObject, ObservableObject {
     private static var historyURL:     URL { appSupportDir().appendingPathComponent("run_history.json") }
     private static var machinesURL:    URL { appSupportDir().appendingPathComponent("remote_machines.json") }
 
+    static var hasConfiguredRemoteMachines: Bool {
+        FileManager.default.fileExists(atPath: machinesURL.path)
+            && !loadMachines().isEmpty
+    }
+
     // MARK: - Init
 
     override init() {
@@ -39,7 +57,12 @@ class AutomationManager: NSObject, ObservableObject {
     func loadAutomations() {
         if let data    = try? Data(contentsOf: Self.automationsURL),
            let decoded = try? JSONDecoder().decode([AutomationModel].self, from: data) {
-            automations = decoded
+            automations = decoded.map { auto in
+                var copy = auto
+                copy.schedule = "manual"
+                return copy
+            }
+            saveAutomations()
         } else {
             automations = defaultAutomations()
             saveAutomations()
@@ -111,7 +134,30 @@ class AutomationManager: NSObject, ObservableObject {
 
     // MARK: - Run
 
+    /// Entry point for UI/menu: confirms destructive automations first.
     func runAutomation(_ automation: AutomationModel) {
+        if Self.destructiveAutomationIDs.contains(automation.id) {
+            pendingDestructiveRun = automation
+            return
+        }
+        executeAutomation(automation, environment: [:])
+    }
+
+    func confirmPendingDestructiveRun() {
+        guard let automation = pendingDestructiveRun else { return }
+        pendingDestructiveRun = nil
+        var env: [String: String] = ["CONFIRM_EVENING_SHUTDOWN": "1"]
+        if automation.id == "fulofilo_run_daily_guarded" {
+            env["ALLOW_PROJECT_DATA_WRITES"] = "1"
+        }
+        executeAutomation(automation, environment: env)
+    }
+
+    func cancelPendingDestructiveRun() {
+        pendingDestructiveRun = nil
+    }
+
+    private func executeAutomation(_ automation: AutomationModel, environment: [String: String]) {
         guard !runningAutomations.contains(automation.id) else { return }
 
         // Check chain dependencies
@@ -124,38 +170,45 @@ class AutomationManager: NSObject, ObservableObject {
 
         runningAutomations.insert(automation.id)
         let startedAt = Date()
+        let scriptPath = automation.scriptPath
+        let scriptContent = automation.scriptContent
+        let automationCopy = automation
+        let env = environment
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
-            let result = self.processManager.executeScript(automation.scriptPath,
-                                                           inlineContent: automation.scriptContent)
+            let result = self.processManager.executeScript(
+                scriptPath,
+                inlineContent: scriptContent,
+                environment: env
+            )
             let finished = Date()
-            let record   = RunRecord(automationId: automation.id,
+            let record   = RunRecord(automationId: automationCopy.id,
                                      startedAt: startedAt,
                                      finishedAt: finished,
                                      success: result.success,
                                      output: result.output)
 
             DispatchQueue.main.async {
-                self.runningAutomations.remove(automation.id)
-                self.updateLog(automation.id, result.output)
+                self.runningAutomations.remove(automationCopy.id)
+                self.updateLog(automationCopy.id, result.output)
                 self.appendHistory(record)
 
-                if let idx = self.automations.firstIndex(where: { $0.id == automation.id }) {
+                if let idx = self.automations.firstIndex(where: { $0.id == automationCopy.id }) {
                     self.automations[idx].lastRun = finished
                     self.saveAutomations()
                 }
 
                 // Notifications
                 if result.success {
-                    NotificationManager.shared.notifyAutomationSuccess(name: automation.name, output: result.output)
+                    NotificationManager.shared.notifyAutomationSuccess(name: automationCopy.name, output: result.output)
                 } else {
-                    NotificationManager.shared.notifyAutomationFailure(name: automation.name, error: result.output)
+                    NotificationManager.shared.notifyAutomationFailure(name: automationCopy.name, error: result.output)
                 }
 
                 // Trigger chained automations on success
                 if result.success {
-                    for nextId in automation.triggersOnSuccess {
+                    for nextId in automationCopy.triggersOnSuccess {
                         if let next = self.automations.first(where: { $0.id == nextId }) {
                             self.runAutomation(next)
                         }
@@ -207,6 +260,22 @@ class AutomationManager: NSObject, ObservableObject {
         if let data = try? JSONEncoder().encode(machines) {
             try? data.write(to: machinesURL, options: .atomic)
         }
+    }
+
+    static func enablePlaceholderRemoteMachine() {
+        saveMachines([
+            RemoteMachine(
+                id: UUID().uuidString,
+                name: "Local placeholder",
+                hostname: "localhost",
+                username: NSUserName(),
+                port: 22
+            )
+        ])
+    }
+
+    static func clearRemoteMachines() {
+        try? FileManager.default.removeItem(at: machinesURL)
     }
 
     // MARK: - Scheduling
@@ -348,14 +417,10 @@ class AutomationManager: NSObject, ObservableObject {
     private func defaultAutomations() -> [AutomationModel] {
         let scriptsRoot = "$HOME/Documents/GitHub/System_Org 2/scripts/SystemOrganizer"
         return [
-            AutomationModel(id: "morning_startup",   name: "Morning Startup Routine",
-                            description: "Start daily project services and workspace helpers",
-                            isEnabled: false, scriptPath: "\(scriptsRoot)/morning_startup_routine.sh",
-                            schedule: "daily_9am"),
             AutomationModel(id: "organize_desktop",  name: "Organize Desktop",
-                            description: "Archive Desktop files into Documents by type",
+                            description: "Archive Desktop files into Documents by type (requires confirm)",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/organize_desktop_to_documents.sh",
-                            schedule: "daily_6pm"),
+                            schedule: "manual", category: .desktop),
             AutomationModel(id: "daily_report",      name: "Daily System Report",
                             description: "Create a daily local system report",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/daily_system_report.sh",
@@ -372,70 +437,42 @@ class AutomationManager: NSObject, ObservableObject {
                             description: "Show repo group, branch, dirty state, upstream, and validation readiness",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/repo_state_summary.sh",
                             schedule: "manual", category: .development, tags: ["repos", "git", "summary"]),
-            AutomationModel(id: "repo_state_summary_obsidian", name: "Repo State Summary (Obsidian)",
-                            description: "Write the repo state summary to the configured Obsidian vault",
-                            isEnabled: false, scriptPath: "\(scriptsRoot)/repo_state_summary_obsidian.sh",
-                            schedule: "manual", category: .development, tags: ["repos", "git", "summary", "obsidian"]),
             AutomationModel(id: "repo_health_check", name: "Repo Health Check",
                             description: "Check repo paths, Git state, upstream status, and active validation configuration",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/repo_health_check.sh",
                             schedule: "manual", category: .development, tags: ["repos", "git", "health"]),
-            AutomationModel(id: "repo_health_check_obsidian", name: "Repo Health Check (Obsidian)",
-                            description: "Write the repo health check to the configured Obsidian vault",
-                            isEnabled: false, scriptPath: "\(scriptsRoot)/repo_health_check_obsidian.sh",
-                            schedule: "manual", category: .development, tags: ["repos", "git", "health", "obsidian"]),
             AutomationModel(id: "project_portfolio_health", name: "Project Portfolio Health",
                             description: "Check Git, Python, Node, and Django status across key projects",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/project_portfolio_health.sh",
                             schedule: "manual"),
-            AutomationModel(id: "project_portfolio_health_obsidian", name: "Project Portfolio Health (Obsidian)",
-                            description: "Run Project Portfolio Health and save the report as a dated Obsidian note",
-                            isEnabled: false, scriptPath: "\(scriptsRoot)/project_portfolio_health_obsidian.sh",
-                            schedule: "manual"),
             AutomationModel(id: "project_safe_validation", name: "Project Safe Validation",
                             description: "Run non-mutating validation/build checks across key projects",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/project_safe_validation.sh",
-                            schedule: "manual"),
-            AutomationModel(id: "project_safe_validation_obsidian", name: "Project Safe Validation (Obsidian)",
-                            description: "Run Project Safe Validation and save the report as a dated Obsidian note",
-                            isEnabled: false, scriptPath: "\(scriptsRoot)/project_safe_validation_obsidian.sh",
                             schedule: "manual"),
             AutomationModel(id: "fulofilo_validate_data_integrity", name: "Fulofilo Data Integrity",
                             description: "Run fulofilo-analytics data integrity validation",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/fulofilo_validate_data_integrity.sh",
                             schedule: "manual"),
             AutomationModel(id: "fulofilo_run_daily_guarded", name: "Fulofilo Daily Automation Guarded",
-                            description: "Guarded entrypoint for fulofilo's mutating daily automation",
+                            description: "Guarded fulofilo daily automation (requires confirm)",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/fulofilo_run_daily_guarded.sh",
-                            schedule: "manual"),
-            AutomationModel(id: "finance_build_frontend", name: "Finance Frontend Build",
-                            description: "Build giovannini-finance React/Vite frontend",
-                            isEnabled: false, scriptPath: "\(scriptsRoot)/finance_build_frontend.sh",
-                            schedule: "manual"),
-            AutomationModel(id: "finance_start_macros_api", name: "Finance Macro API Start",
-                            description: "Start the local finance macro API on port 8012",
-                            isEnabled: false, scriptPath: "\(scriptsRoot)/finance_start_macros_api.sh",
                             schedule: "manual"),
             AutomationModel(id: "gmc_build_frontend", name: "GMC Frontend Build",
                             description: "Build GMC React/Vite frontend",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/gmc_build_frontend.sh",
-                            schedule: "manual"),
-            AutomationModel(id: "gmc_django_check", name: "GMC Django Check",
-                            description: "Run Django system checks for GMC nested app",
-                            isEnabled: false, scriptPath: "\(scriptsRoot)/gmc_django_check.sh",
                             schedule: "manual"),
             AutomationModel(id: "personallifeos_django_check", name: "PersonalLifeOS Django Check",
                             description: "Run Django system checks for PersonalLifeOS",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/personallifeos_django_check.sh",
                             schedule: "manual"),
             AutomationModel(id: "clean_downloads",   name: "Clean Old Downloads",
-                            description: "Move Downloads files older than five days into an archive",
+                            description: "Trash Downloads older than five days (requires confirm)",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/clean_downloads_older_than_5_days.sh",
-                            schedule: "manual"),
+                            schedule: "manual", category: .desktop),
             AutomationModel(id: "evening_shutdown",  name: "Evening Shutdown Routine",
-                            description: "Save work, stop local project servers, and clean temp files",
+                            description: "Save work, quit apps, stop project servers (requires confirm)",
                             isEnabled: false, scriptPath: "\(scriptsRoot)/evening_shutdown_routine.sh",
-                            schedule: "daily_midnight"),
+                            schedule: "manual"),
         ]
     }
 
@@ -464,7 +501,11 @@ class ProcessManager {
     var timeoutSeconds: TimeInterval = 600
 
     /// Executes a script file, or inline content written to a temp file if scriptPath is empty.
-    func executeScript(_ scriptPath: String, inlineContent: String = "") -> ScriptExecutionResult {
+    func executeScript(
+        _ scriptPath: String,
+        inlineContent: String = "",
+        environment: [String: String] = [:]
+    ) -> ScriptExecutionResult {
         let expandedPath = AutomationManager.expandPath(scriptPath)
 
         // If only inline content, write to a temp file
@@ -515,6 +556,11 @@ class ProcessManager {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments     = arguments
+        if !environment.isEmpty {
+            var env = ProcessInfo.processInfo.environment
+            for (key, value) in environment { env[key] = value }
+            process.environment = env
+        }
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError  = pipe
