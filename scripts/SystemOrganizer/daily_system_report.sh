@@ -80,7 +80,27 @@ fi
 TOP_CPU_NAME="$(echo "$TOP_CPU" | /usr/bin/head -1 | /usr/bin/awk '{for(i=4;i<=NF;i++) printf "%s%s", $i, (i<NF?" ":""); print ""}')"
 TOP_CPU_PCT="$(echo "$TOP_CPU" | /usr/bin/head -1 | /usr/bin/awk '{print $2+0}')"
 if /usr/bin/awk -v p="$TOP_CPU_PCT" 'BEGIN { exit !(p >= 15) }'; then
-  WARNINGS+=("High CPU: ${TOP_CPU_NAME} at ${TOP_CPU_PCT}%.")
+  # WindowServer gets its own section below — avoid a duplicate generic line
+  if [[ "$TOP_CPU_NAME" != *WindowServer* ]]; then
+    WARNINGS+=("High CPU: ${TOP_CPU_NAME} at ${TOP_CPU_PCT}%.")
+  fi
+fi
+
+WS_LINE="$(echo "$TOP_CPU" | /usr/bin/awk '/WindowServer/ {print; exit}')"
+WS_PCT="0"
+WS_HINTS=()
+if [[ -n "$WS_LINE" ]]; then
+  WS_PCT="$(echo "$WS_LINE" | /usr/bin/awk '{print $2+0}')"
+  if /usr/bin/awk -v p="$WS_PCT" 'BEGIN { exit !(p >= 15) }'; then
+    WARNINGS+=("WindowServer using ${WS_PCT}% CPU — display compositor is busy (not a standalone crash).")
+    WS_HINTS+=(
+      "Close unused Cursor / browser / ChatGPT windows (Retina redraw is expensive)."
+      "System Settings → Accessibility → Display: enable Reduce motion (and Reduce transparency)."
+      "Stop screen sharing / recording if active; unplug external displays to test."
+      "Quit menu-bar agents one-by-one (e.g. Logitech) if it stays high while idle."
+      "Logout/login or reboot if still high — common on macOS betas."
+    )
+  fi
 fi
 
 SO_LINE="$(echo "$TOP_CPU" | /usr/bin/awk '/SystemOrganizer/ {print; exit}')"
@@ -128,6 +148,19 @@ UPTIME_SHORT="$(/usr/bin/uptime | /usr/bin/sed -E 's/^[[:space:]]*[0-9:]+[[:spac
     echo
   fi
 
+  if (( ${#WS_HINTS[@]} > 0 )); then
+    echo "── WindowServer — what it means & how to fix ─────"
+    echo "  WindowServer composites every pixel on screen."
+    echo "  High CPU = constant redraw (apps/displays), not a"
+    echo "  broken system by itself. Try in order:"
+    i=1
+    for h in "${WS_HINTS[@]}"; do
+      echo "  ${i}. $h"
+      i=$((i + 1))
+    done
+    echo
+  fi
+
   echo "── Disk (/) ──────────────────────────────────────"
   echo "  Used ${DISK_USED_GIB} GiB / ${DISK_TOTAL_GIB} GiB (${DISK_CAP}%) — ${DISK_FREE_GIB} GiB free"
   echo
@@ -163,3 +196,13 @@ UPTIME_SHORT="$(/usr/bin/uptime | /usr/bin/sed -E 's/^[[:space:]]*[0-9:]+[[:spac
 
 echo "Saved system report: $REPORT_FILE"
 echo "Verdict: $VERDICT"
+
+if (( ${#WS_HINTS[@]} > 0 )); then
+  /usr/bin/osascript - "$WS_PCT" "$REPORT_FILE" <<'APPLESCRIPT'
+on run argv
+  set pct to item 1 of argv
+  set reportPath to item 2 of argv
+  display alert "WindowServer high CPU" message "WindowServer is using " & pct & "% CPU." & return & return & "The display compositor is busy (not a crash). Close unused Cursor/browser windows, enable Reduce motion, or check screen sharing." & return & return & "Report saved to:" & return & reportPath as warning buttons {"OK"} default button "OK"
+end run
+APPLESCRIPT
+fi
