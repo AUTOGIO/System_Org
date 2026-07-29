@@ -1,10 +1,12 @@
 import SwiftUI
 import ServiceManagement
+import AppKit
 
 struct SettingsView: View {
     @EnvironmentObject var automationManager:   AutomationManager
     @EnvironmentObject var ollamaManager:       OllamaManager
     @EnvironmentObject var notificationManager: NotificationManager
+    @EnvironmentObject var featureFlags:        FeatureFlagsStore
 
     @AppStorage("LaunchAtLogin")         private var launchAtLogin       = false
     @AppStorage("NotificationsEnabled")  private var notificationsEnabled = true
@@ -12,6 +14,8 @@ struct SettingsView: View {
     @AppStorage("RunHistoryLimit")       private var logRetention         = 500
 
     @State private var showClearHistoryAlert = false
+    @State private var showAddRemoteSheet = false
+    @State private var integrationMessage: String?
 
     var body: some View {
         ScrollView {
@@ -20,7 +24,6 @@ struct SettingsView: View {
                 // ── General ─────────────────────────────────────────
                 SettingsSectionView(title: "General") {
                     VStack(spacing: 12) {
-                        // Launch at Login (wired to SMAppService)
                         HStack(spacing: 12) {
                             Image(systemName: "arrow.up.right.circle").foregroundColor(.blue).frame(width: 20)
                             Text("Launch at Login").font(.caption)
@@ -35,7 +38,6 @@ struct SettingsView: View {
                             .labelsHidden()
                         }
 
-                        // Notifications (wired to NotificationManager)
                         HStack(spacing: 12) {
                             Image(systemName: "bell.fill").foregroundColor(.blue).frame(width: 20)
                             VStack(alignment: .leading, spacing: 2) {
@@ -137,47 +139,61 @@ struct SettingsView: View {
                 // ── Integrations (tabs unlock when configured) ───────
                 SettingsSectionView(title: "Integrations") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Obsidian and Remote tabs stay hidden until configured.")
+                        Text("Obsidian and Remote tabs appear immediately after you configure them.")
                             .font(.caption2)
                             .foregroundColor(.secondary)
 
                         HStack {
-                            Text(FeatureFlags.obsidianConfigured
+                            Text(featureFlags.obsidianConfigured
                                   ? "Obsidian: configured"
                                   : "Obsidian: not configured")
                                 .font(.caption)
                             Spacer()
-                            Button(FeatureFlags.obsidianConfigured ? "Reset" : "Enable") {
-                                if FeatureFlags.obsidianConfigured {
+                            if featureFlags.obsidianConfigured {
+                                Button("Reset") {
                                     ObsidianVaultStore.clearConfiguredVaults()
-                                } else {
-                                    ObsidianVaultStore.enableDefaultConfiguration()
+                                    featureFlags.refresh()
+                                    integrationMessage = "Obsidian tab hidden."
                                 }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            } else {
+                                Button("Choose Vault…") {
+                                    pickObsidianVault()
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
                         }
 
                         HStack {
-                            Text(FeatureFlags.remoteConfigured
+                            Text(featureFlags.remoteConfigured
                                   ? "Remote: configured"
                                   : "Remote: not configured")
                                 .font(.caption)
                             Spacer()
-                            Button(FeatureFlags.remoteConfigured ? "Reset" : "Enable") {
-                                if FeatureFlags.remoteConfigured {
+                            if featureFlags.remoteConfigured {
+                                Button("Reset") {
                                     AutomationManager.clearRemoteMachines()
-                                } else {
-                                    AutomationManager.enablePlaceholderRemoteMachine()
+                                    featureFlags.refresh()
+                                    integrationMessage = "Remote tab hidden."
                                 }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            } else {
+                                Button("Add Machine…") {
+                                    showAddRemoteSheet = true
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
                         }
 
-                        Text("After Enable, relaunch the app to show the new tab.")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                        if let integrationMessage {
+                            Text(integrationMessage)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
 
@@ -187,6 +203,7 @@ struct SettingsView: View {
                         SettingsInfoRow(label: "App", value: "System Organizer 2.1.0")
                         SettingsInfoRow(label: "macOS", value: ProcessInfo.processInfo.operatingSystemVersionString)
                         SettingsInfoRow(label: "Cores", value: "\(ProcessInfo.processInfo.activeProcessorCount)")
+                        SettingsInfoRow(label: "Build tip", value: "swift test --scratch-path /tmp/SystemOrganizer-spm-build")
                     }
                 }
 
@@ -204,44 +221,60 @@ struct SettingsView: View {
                         }
 
                         Button(role: .destructive) { automationManager.automationLogs.removeAll() } label: {
-                            HStack { Image(systemName: "trash.fill"); Text("Clear Logs") }
+                            HStack { Image(systemName: "trash"); Text("Clear Automation Logs") }
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)
                     }
                 }
-
-                Spacer()
             }
             .padding()
         }
+        .sheet(isPresented: $showAddRemoteSheet) {
+            AddRemoteMachineSheet(isPresented: $showAddRemoteSheet) { machine in
+                if let error = AutomationManager.saveMachinesReporting([machine]) {
+                    automationManager.lastPersistenceError = error
+                    notificationManager.notifyPersistenceFailure(error)
+                } else {
+                    featureFlags.refresh()
+                    integrationMessage = "Remote tab enabled."
+                }
+            }
+        }
+    }
+
+    private func pickObsidianVault() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "Choose your Obsidian vault folder"
+        panel.prompt = "Use Vault"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let name = url.lastPathComponent
+        if let error = ObsidianVaultStore.enableWithVault(at: url.path, name: name) {
+            automationManager.lastPersistenceError = error
+            notificationManager.notifyPersistenceFailure(error)
+            return
+        }
+        featureFlags.refresh()
+        integrationMessage = "Obsidian tab enabled."
     }
 }
+
+// MARK: - Helpers
 
 struct SettingsSectionView<Content: View>: View {
     let title: String
-    let content: Content
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title; self.content = content()
-    }
+    @ViewBuilder let content: Content
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title).font(.headline)
-            content.padding().background(Color(.controlBackgroundColor)).cornerRadius(8)
-        }
-    }
-}
-
-struct SettingToggleRow: View {
-    let label: String
-    @Binding var value: Bool
-    let icon: String
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon).foregroundColor(.blue).frame(width: 20)
-            Text(label).font(.caption)
-            Spacer()
-            Toggle("", isOn: $value).labelsHidden()
+            content
+                .padding()
+                .background(Color(.controlBackgroundColor))
+                .cornerRadius(8)
         }
     }
 }
@@ -249,18 +282,12 @@ struct SettingToggleRow: View {
 struct SettingsInfoRow: View {
     let label: String
     let value: String
+
     var body: some View {
         HStack {
             Text(label).font(.caption).foregroundColor(.secondary)
             Spacer()
-            Text(value).font(.caption).fontWeight(.semibold)
+            Text(value).font(.caption).textSelection(.enabled)
         }
     }
-}
-
-#Preview {
-    SettingsView()
-        .environmentObject(AutomationManager())
-        .environmentObject(OllamaManager())
-        .environmentObject(NotificationManager.shared)
 }

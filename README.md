@@ -4,7 +4,14 @@ Personal local-first macOS automation hub (SwiftUI / SwiftPM): scripts, repo hea
 
 **Prerequisite:** clone [PersonalOSKit](https://github.com/AUTOGIO/PersonalOSKit) as a sibling of this repo (`../PersonalOSKit`). Package.swift depends on it for `OllamaClient` only.
 
-**Run / deploy:** `./scripts/SystemOrganizer/deploy_system_organizer.sh`  
-**Build / test:** `swift build` · `swift test`
+**Build / test** (recommended — avoids iCloud Documents Finder xattr codesign failures on `*.xctest`):
+
+```zsh
+swift test --scratch-path /tmp/SystemOrganizer-spm-build
+swift build -c release
+```
+
+**Deploy:** `./scripts/SystemOrganizer/deploy_system_organizer.sh`  
+(Deploy already runs tests with the scratch path above.)
 
 **Where things live:** `Sources/` app code · `Tests/` tests · `scripts/` helpers · `config/` settings · `assets/` images · `docs/` guides · `docs/prompts/` AI prompts · `archive/` old files kept for reference

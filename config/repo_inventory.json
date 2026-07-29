@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-07-29T14:36:46.442335+00:00",
+  "generated_at": "2026-07-29T14:50:31.661478+00:00",
   "scan_roots": [
     "$HOME/Documents/GitHub"
   ],
@@ -256,8 +256,8 @@
       ],
       "validation_hint": "swift build",
       "git": {
-        "branch": "fix/audit-remediation",
-        "dirty_count": 3
+        "branch": "main",
+        "dirty_count": 1
       }
     },
     {

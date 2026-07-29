@@ -4,6 +4,7 @@ struct ContentView: View {
     @EnvironmentObject var automationManager:  AutomationManager
     @EnvironmentObject var ollamaManager:      OllamaManager
     @EnvironmentObject var gitStatusManager:   GitStatusManager
+    @EnvironmentObject var featureFlags:       FeatureFlagsStore
 
     @State private var selectedTab: TabSelection = .dashboard
 
@@ -34,18 +35,24 @@ struct ContentView: View {
             }
         }
 
-        /// Remote / Obsidian stay hidden until the user has saved config files.
-        static var visibleCases: [TabSelection] {
+        static func visibleCases(remote: Bool, obsidian: Bool) -> [TabSelection] {
             var tabs: [TabSelection] = [.dashboard, .automations, .ai, .calendar, .settings]
-            if FeatureFlags.remoteConfigured {
+            if remote {
                 tabs.insert(.remote, at: 3)
             }
-            if FeatureFlags.obsidianConfigured {
+            if obsidian {
                 let idx = tabs.firstIndex(of: .settings) ?? tabs.count
                 tabs.insert(.obsidian, at: idx)
             }
             return tabs
         }
+    }
+
+    private var visibleTabs: [TabSelection] {
+        TabSelection.visibleCases(
+            remote: featureFlags.remoteConfigured,
+            obsidian: featureFlags.obsidianConfigured
+        )
     }
 
     var body: some View {
@@ -75,6 +82,26 @@ struct ContentView: View {
                 .background(Color(.controlBackgroundColor))
                 .overlay(Rectangle().frame(height: 1).foregroundColor(Color(.separatorColor)), alignment: .bottom)
 
+                if let error = automationManager.lastPersistenceError {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.primary)
+                            .lineLimit(2)
+                        Spacer()
+                        Button("Dismiss") {
+                            automationManager.clearPersistenceError()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .background(Color.orange.opacity(0.15))
+                }
+
                 // ── Content ───────────────────────────────────────────
                 TabView(selection: $selectedTab) {
                     DashboardView()
@@ -83,13 +110,13 @@ struct ContentView: View {
                         .tag(TabSelection.automations)
                     AIView()
                         .tag(TabSelection.ai)
-                    if FeatureFlags.remoteConfigured {
+                    if featureFlags.remoteConfigured {
                         RemoteControlView()
                             .tag(TabSelection.remote)
                     }
                     CalendarView()
                         .tag(TabSelection.calendar)
-                    if FeatureFlags.obsidianConfigured {
+                    if featureFlags.obsidianConfigured {
                         ObsidianView()
                             .tag(TabSelection.obsidian)
                     }
@@ -99,7 +126,7 @@ struct ContentView: View {
 
                 // ── Tab Bar ───────────────────────────────────────────
                 HStack(spacing: 0) {
-                    ForEach(TabSelection.visibleCases, id: \.self) { tab in
+                    ForEach(visibleTabs, id: \.self) { tab in
                         TabBarButton(
                             icon:       tab.icon,
                             label:      tab.label,
@@ -112,6 +139,12 @@ struct ContentView: View {
                 .overlay(Rectangle().frame(height: 1).foregroundColor(Color(.separatorColor)), alignment: .top)
             }
             .frame(minWidth: 1100, minHeight: 720)
+            .onChange(of: featureFlags.remoteConfigured) { enabled in
+                if !enabled && selectedTab == .remote { selectedTab = .settings }
+            }
+            .onChange(of: featureFlags.obsidianConfigured) { enabled in
+                if !enabled && selectedTab == .obsidian { selectedTab = .settings }
+            }
         }
     }
 
@@ -124,28 +157,6 @@ struct ContentView: View {
         default:
             return 0
         }
-    }
-}
-
-// MARK: - FeatureFlags
-
-/// File-based feature gates (nonisolated — safe for SwiftUI static tab lists).
-enum FeatureFlags {
-    static var remoteConfigured: Bool {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let url = base.appendingPathComponent("SystemOrganizer/remote_machines.json")
-        guard FileManager.default.fileExists(atPath: url.path),
-              let data = try? Data(contentsOf: url),
-              let machines = try? JSONDecoder().decode([RemoteMachine].self, from: data) else {
-            return false
-        }
-        return !machines.isEmpty
-    }
-
-    static var obsidianConfigured: Bool {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let url = base.appendingPathComponent("SystemOrganizer/obsidian_vaults.json")
-        return FileManager.default.fileExists(atPath: url.path)
     }
 }
 
@@ -206,4 +217,5 @@ extension View {
         .environmentObject(MonitoringManager())
         .environmentObject(OllamaManager())
         .environmentObject(GitStatusManager())
+        .environmentObject(FeatureFlagsStore())
 }

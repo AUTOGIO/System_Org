@@ -108,7 +108,9 @@ struct ObsidianView: View {
         }
         .sheet(isPresented: $showAddVault) {
             AddVaultSheet(isPresented: $showAddVault, vaults: $vaults) {
-                ObsidianVaultStore.saveVaults(vaults)
+                if let error = ObsidianVaultStore.saveVaultsReporting(vaults) {
+                    NotificationManager.shared.notifyPersistenceFailure(error)
+                }
                 if selectedVault == nil, let defaultVault = vaults.first(where: { $0.isDefault }) {
                     selectedVault = defaultVault
                     loadNotes(from: defaultVault)
@@ -180,13 +182,25 @@ enum ObsidianVaultStore {
         return decoded
     }
 
-    static func saveVaults(_ vaults: [ObsidianVault]) {
-        guard let data = try? JSONEncoder().encode(vaults) else { return }
-        try? data.write(to: vaultsURL, options: .atomic)
+    static func saveVaults(_ vaults: [ObsidianVault]) throws {
+        let data = try JSONEncoder().encode(vaults)
+        try data.write(to: vaultsURL, options: .atomic)
     }
 
-    static func enableDefaultConfiguration() {
-        saveVaults(defaultVaults)
+    @discardableResult
+    static func saveVaultsReporting(_ vaults: [ObsidianVault]) -> String? {
+        do {
+            try saveVaults(vaults)
+            return nil
+        } catch {
+            return "Could not save Obsidian vaults: \(error.localizedDescription)"
+        }
+    }
+
+    /// Prefer a real folder pick over a placeholder path.
+    static func enableWithVault(at path: String, name: String = "Main Vault") -> String? {
+        let vault = ObsidianVault(id: UUID().uuidString, name: name, path: path, isDefault: true)
+        return saveVaultsReporting([vault])
     }
 
     static func clearConfiguredVaults() {

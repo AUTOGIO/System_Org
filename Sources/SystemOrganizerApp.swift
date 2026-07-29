@@ -9,6 +9,7 @@ struct SystemOrganizerApp: App {
     @StateObject private var ollamaManager      = OllamaManager()
     @StateObject private var gitStatusManager   = GitStatusManager()
     @StateObject private var notificationManager = NotificationManager.shared
+    @StateObject private var featureFlags       = FeatureFlagsStore()
 
     var body: some Scene {
         WindowGroup {
@@ -18,6 +19,7 @@ struct SystemOrganizerApp: App {
                 .environmentObject(ollamaManager)
                 .environmentObject(gitStatusManager)
                 .environmentObject(notificationManager)
+                .environmentObject(featureFlags)
                 .onAppear { setupApp() }
                 .alert(
                     "Run destructive automation?",
@@ -45,6 +47,7 @@ struct SystemOrganizerApp: App {
                 .environmentObject(automationManager)
                 .environmentObject(monitoringManager)
                 .environmentObject(ollamaManager)
+                .environmentObject(featureFlags)
                 .alert(
                     "Run destructive automation?",
                     isPresented: Binding(

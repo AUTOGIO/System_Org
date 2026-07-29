@@ -55,6 +55,14 @@ class NotificationManager: NSObject, ObservableObject, UNUserNotificationCenterD
         )
     }
 
+    func notifyPersistenceFailure(_ message: String) {
+        send(
+            title: "⚠️ Save failed",
+            body: String(message.prefix(160)),
+            identifier: "persistence-failure"
+        )
+    }
+
     // MARK: - Private
 
     private func send(title: String, body: String, identifier: String) {

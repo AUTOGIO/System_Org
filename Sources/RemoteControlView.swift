@@ -43,7 +43,10 @@ struct RemoteControlView: View {
     }
 
     private func saveMachines() {
-        AutomationManager.saveMachines(machines)
+        if let error = AutomationManager.saveMachinesReporting(machines) {
+            // Surface via NotificationManager — Remote tab has no shared AutomationManager error channel
+            NotificationManager.shared.notifyPersistenceFailure(error)
+        }
     }
 }
 

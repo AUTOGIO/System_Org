@@ -63,6 +63,15 @@ System Organizer is buildable and testable again on this Mac. Hardcoded former-u
 - Launched and verified running after deploy
 - Accessibility usage string present in bundled Info.plist
 
+## Round 3 (polish)
+
+- Persistence failures surface as an in-app banner + notification
+- Integrations refresh Obsidian/Remote tabs live (no relaunch)
+- Obsidian Enable uses folder picker; Remote Enable uses Add Machine sheet
+- Timer/`@MainActor` scheduling callbacks hop via `Task { @MainActor in … }`
+- README documents `--scratch-path /tmp/SystemOrganizer-spm-build` for tests
+- Pruned old `automations.json.bak-*` (kept 3 newest)
+
 ## Round 2 (full fix — agreed scope)
 
 - All automation schedules forced to **manual**

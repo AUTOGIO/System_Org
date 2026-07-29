@@ -10,6 +10,8 @@ class AutomationManager: NSObject, ObservableObject {
     @Published var runHistory: [RunRecord] = []
     /// When set, the UI shows a confirmation alert before running.
     @Published var pendingDestructiveRun: AutomationModel? = nil
+    /// Last persistence failure message (nil when healthy).
+    @Published var lastPersistenceError: String? = nil
 
     private nonisolated(unsafe) let processManager = ProcessManager()
     nonisolated(unsafe) var schedulers: [String: Timer] = [:]
@@ -71,9 +73,22 @@ class AutomationManager: NSObject, ObservableObject {
     }
 
     func saveAutomations() {
-        if let data = try? JSONEncoder().encode(automations) {
-            try? data.write(to: Self.automationsURL, options: .atomic)
+        do {
+            let data = try JSONEncoder().encode(automations)
+            try data.write(to: Self.automationsURL, options: .atomic)
+            clearPersistenceError()
+        } catch {
+            reportPersistenceError("Could not save automations: \(error.localizedDescription)")
         }
+    }
+
+    func clearPersistenceError() {
+        lastPersistenceError = nil
+    }
+
+    private func reportPersistenceError(_ message: String) {
+        lastPersistenceError = message
+        NotificationManager.shared.notifyPersistenceFailure(message)
     }
 
     // MARK: - CRUD
@@ -232,8 +247,12 @@ class AutomationManager: NSObject, ObservableObject {
         let limit = max(10, UserDefaults.standard.integer(forKey: "RunHistoryLimit"))
         let effectiveLimit = limit == 10 && UserDefaults.standard.object(forKey: "RunHistoryLimit") == nil ? 500 : limit
         if runHistory.count > effectiveLimit { runHistory = Array(runHistory.prefix(effectiveLimit)) }
-        if let data = try? JSONEncoder().encode(runHistory) {
-            try? data.write(to: Self.historyURL, options: .atomic)
+        do {
+            let data = try JSONEncoder().encode(runHistory)
+            try data.write(to: Self.historyURL, options: .atomic)
+            // Don't clear automation save errors from history success
+        } catch {
+            reportPersistenceError("Could not save run history: \(error.localizedDescription)")
         }
     }
 
@@ -256,22 +275,19 @@ class AutomationManager: NSObject, ObservableObject {
         return decoded
     }
 
-    static func saveMachines(_ machines: [RemoteMachine]) {
-        if let data = try? JSONEncoder().encode(machines) {
-            try? data.write(to: machinesURL, options: .atomic)
-        }
+    static func saveMachines(_ machines: [RemoteMachine]) throws {
+        let data = try JSONEncoder().encode(machines)
+        try data.write(to: machinesURL, options: .atomic)
     }
 
-    static func enablePlaceholderRemoteMachine() {
-        saveMachines([
-            RemoteMachine(
-                id: UUID().uuidString,
-                name: "Local placeholder",
-                hostname: "localhost",
-                username: NSUserName(),
-                port: 22
-            )
-        ])
+    /// Opens config for a user-provided machine (no localhost placeholder).
+    static func saveMachinesReporting(_ machines: [RemoteMachine]) -> String? {
+        do {
+            try saveMachines(machines)
+            return nil
+        } catch {
+            return "Could not save remote machines: \(error.localizedDescription)"
+        }
     }
 
     static func clearRemoteMachines() {
@@ -298,9 +314,16 @@ class AutomationManager: NSObject, ObservableObject {
     private func setupScheduler(for automation: AutomationModel) {
         guard let fireDate = nextFireDate(for: automation.schedule) else { return }
         let delay = max(fireDate.timeIntervalSinceNow, 1)
+        let automationId = automation.id
         let timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
-            self?.runAutomation(automation)
-            self?.setupScheduler(for: automation)  // reschedule for next occurrence
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard let current = self.automations.first(where: { $0.id == automationId }) else { return }
+                self.runAutomation(current)
+                if current.isEnabled && current.schedule != "manual" && current.schedule != "file_watch" {
+                    self.setupScheduler(for: current)
+                }
+            }
         }
         schedulers[automation.id] = timer
     }

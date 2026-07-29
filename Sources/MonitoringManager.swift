@@ -14,7 +14,9 @@ class MonitoringManager: NSObject, ObservableObject {
         super.init()
         refreshMetrics()
         metricsTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            self?.refreshMetrics()
+            Task { @MainActor [weak self] in
+                self?.refreshMetrics()
+            }
         }
     }
 
