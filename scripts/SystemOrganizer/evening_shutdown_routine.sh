@@ -1,7 +1,13 @@
 #!/bin/zsh
 set -euo pipefail
 
-ALERT_SCRIPT='/usr/bin/osascript -e'
+# Destructive: requires explicit confirmation.
+# Set CONFIRM_EVENING_SHUTDOWN=1 to allow the routine to run.
+if [[ "${CONFIRM_EVENING_SHUTDOWN:-0}" != "1" ]]; then
+  echo "Refusing evening shutdown: set CONFIRM_EVENING_SHUTDOWN=1 to proceed."
+  exit 2
+fi
+
 refused_file="$(/usr/bin/mktemp /tmp/system_organizer_refused.XXXXXX)"
 
 save_and_quit_apps() {

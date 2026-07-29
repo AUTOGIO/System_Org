@@ -236,7 +236,7 @@ class AutomationManager: NSObject, ObservableObject {
         schedulers[automation.id] = timer
     }
 
-    private func nextFireDate(for schedule: String) -> Date? {
+    func nextFireDate(for schedule: String) -> Date? {
         let cal = Calendar.current
         let now = Date()
         switch schedule {
@@ -346,8 +346,7 @@ class AutomationManager: NSObject, ObservableObject {
     // MARK: - Defaults
 
     private func defaultAutomations() -> [AutomationModel] {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let scriptsRoot = "\(home)/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2/scripts/SystemOrganizer"
+        let scriptsRoot = "$HOME/Documents/GitHub/System_Org 2/scripts/SystemOrganizer"
         return [
             AutomationModel(id: "morning_startup",   name: "Morning Startup Routine",
                             description: "Start daily project services and workspace helpers",
@@ -355,7 +354,7 @@ class AutomationManager: NSObject, ObservableObject {
                             schedule: "daily_9am"),
             AutomationModel(id: "organize_desktop",  name: "Organize Desktop",
                             description: "Archive Desktop files into Documents by type",
-                            isEnabled: true, scriptPath: "\(scriptsRoot)/organize_desktop_to_documents.sh",
+                            isEnabled: false, scriptPath: "\(scriptsRoot)/organize_desktop_to_documents.sh",
                             schedule: "daily_6pm"),
             AutomationModel(id: "daily_report",      name: "Daily System Report",
                             description: "Create a daily local system report",
@@ -461,6 +460,9 @@ struct ScriptExecutionResult {
 }
 
 class ProcessManager {
+    /// Wall-clock timeout for script execution (default 10 minutes).
+    var timeoutSeconds: TimeInterval = 600
+
     /// Executes a script file, or inline content written to a temp file if scriptPath is empty.
     func executeScript(_ scriptPath: String, inlineContent: String = "") -> ScriptExecutionResult {
         let expandedPath = AutomationManager.expandPath(scriptPath)
@@ -519,7 +521,25 @@ class ProcessManager {
 
         do {
             try process.run()
-            process.waitUntilExit()
+            let deadline = Date().addingTimeInterval(timeoutSeconds)
+            while process.isRunning {
+                if Date() >= deadline {
+                    process.terminate()
+                    // Give a brief grace period, then force-kill if needed
+                    let killDeadline = Date().addingTimeInterval(2)
+                    while process.isRunning && Date() < killDeadline {
+                        Thread.sleep(forTimeInterval: 0.05)
+                    }
+                    if process.isRunning {
+                        process.interrupt()
+                    }
+                    let partial = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+                    let message = "❌ Timed out after \(Int(timeoutSeconds))s"
+                    let output = partial.isEmpty ? message : "\(partial)\n\(message)"
+                    return ScriptExecutionResult(success: false, output: output, exitCode: process.terminationStatus)
+                }
+                Thread.sleep(forTimeInterval: 0.1)
+            }
             let data   = pipe.fileHandleForReading.readDataToEndOfFile()
             let rawOutput = String(data: data, encoding: .utf8) ?? ""
             let success = process.terminationStatus == 0

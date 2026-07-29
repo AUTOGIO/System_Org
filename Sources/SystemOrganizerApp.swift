@@ -1,5 +1,13 @@
 import SwiftUI
 import ServiceManagement
+import AppKit
+
+/// Retains the global NSEvent monitor (must not be discarded — Apple docs).
+@MainActor
+private final class GlobalHotkeyMonitor {
+    static let shared = GlobalHotkeyMonitor()
+    var monitor: Any?
+}
 
 @main
 struct SystemOrganizerApp: App {
@@ -8,10 +16,6 @@ struct SystemOrganizerApp: App {
     @StateObject private var ollamaManager      = OllamaManager()
     @StateObject private var gitStatusManager   = GitStatusManager()
     @StateObject private var notificationManager = NotificationManager.shared
-
-    /// Tracks whether the global-hotkey quick-launch panel is showing
-    @State private var showQuickLaunch = false
-    private var globalMonitor: Any?
 
     var body: some Scene {
         WindowGroup {
@@ -69,7 +73,7 @@ struct SystemOrganizerApp: App {
         }
     }
 
-    // MARK: - Global Hotkey  ⌘⌥Space → quick-launch panel
+    // MARK: - Global Hotkey  ⌘⌥Space → bring app forward
 
     private func registerGlobalHotkey() {
         // Requires Accessibility permission — request it gracefully
@@ -79,11 +83,13 @@ struct SystemOrganizerApp: App {
             return
         }
 
-        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
+        GlobalHotkeyMonitor.shared.monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
             // ⌘⌥Space  (keyCode 49 = Space)
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             if flags == [.command, .option] && event.keyCode == 49 {
-                Task { @MainActor in NSApp.activate(ignoringOtherApps: true) }
+                Task { @MainActor in
+                    NSApp.activate(ignoringOtherApps: true)
+                }
             }
         }
     }

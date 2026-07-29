@@ -10,13 +10,13 @@ let package = Package(
         .executable(name: "SystemOrganizer", targets: ["SystemOrganizer"])
     ],
     dependencies: [
-        .package(path: "/Users/giovannini_nuovo/Developer/PersonalOSKit")
+        // Sibling checkout: Documents/GitHub/PersonalOSKit (private AUTOGIO/PersonalOSKit)
+        .package(path: "../PersonalOSKit")
     ],
     targets: [
         .executableTarget(
             name: "SystemOrganizer",
             dependencies: [
-                .product(name: "ShellRunner", package: "PersonalOSKit"),
                 .product(name: "OllamaClient", package: "PersonalOSKit"),
             ],
             path: "Sources"

@@ -59,6 +59,8 @@ struct RemoteMachineCard: View {
     @State private var commandText      = ""
     @State private var commandOutput    = ""
     @State private var isRunningCmd     = false
+    @State private var showCommandConfirm = false
+    @State private var pendingCommand   = ""
 
     var body: some View {
         VStack(spacing: 12) {
@@ -141,6 +143,17 @@ struct RemoteMachineCard: View {
             }
         }
         .padding().background(Color(.controlBackgroundColor)).cornerRadius(8)
+        .alert("Run remote command?", isPresented: $showCommandConfirm) {
+            Button("Cancel", role: .cancel) {
+                pendingCommand = ""
+            }
+            Button("Run", role: .destructive) {
+                runRemoteCommand(pendingCommand)
+                pendingCommand = ""
+            }
+        } message: {
+            Text("This will run over SSH on \(machine.username)@\(machine.hostname):\n\n\(pendingCommand)")
+        }
     }
 
     private func checkConnection() {
@@ -155,8 +168,13 @@ struct RemoteMachineCard: View {
     }
 
     private func executeCommand() {
-        guard !commandText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        let cmd = commandText
+        let cmd = commandText.trimmingCharacters(in: .whitespaces)
+        guard !cmd.isEmpty else { return }
+        pendingCommand = cmd
+        showCommandConfirm = true
+    }
+
+    private func runRemoteCommand(_ cmd: String) {
         commandOutput = "Running…"
         isRunningCmd  = true
 

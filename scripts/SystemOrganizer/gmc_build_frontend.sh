@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-APP="/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/GMC"
+APP="${HOME}/Documents/GitHub/GMC"
 NPM="/opt/homebrew/bin/npm"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-300}"
 

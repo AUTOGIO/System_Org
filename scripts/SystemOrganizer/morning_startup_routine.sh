@@ -1,9 +1,9 @@
 #!/bin/zsh
 set -euo pipefail
 
-LIFE_OS_ROOT="/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/Life_OS"
+LIFE_OS_ROOT="${HOME}/Documents/GitHub/Life_OS"
 LIFE_OS_APP="$LIFE_OS_ROOT/lifeos"
-FINANCE_ROOT="/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/giovannini-finance"
+FINANCE_ROOT="${HOME}/Documents/GitHub/giovannini-finance"
 FINANCE_APP="$FINANCE_ROOT/finance-tracker"
 MACROS_APP="$FINANCE_ROOT/Personal_Tracker_macros"
 NPM_BIN="/opt/homebrew/bin/npm"
@@ -52,7 +52,7 @@ start_finance_frontend() {
 
   /usr/bin/osascript <<APPLESCRIPT
 tell application "Terminal"
-  do script "/bin/zsh '/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/giovannini-finance/.run/run_finance_frontend.sh'"
+  do script "/bin/zsh '${HOME}/Documents/GitHub/giovannini-finance/.run/run_finance_frontend.sh'"
 end tell
 APPLESCRIPT
 
@@ -73,7 +73,7 @@ start_finance_macros() {
 
   /usr/bin/osascript <<APPLESCRIPT
 tell application "Terminal"
-  do script "/bin/zsh '/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/giovannini-finance/.run/run_finance_macros.sh'"
+  do script "/bin/zsh '${HOME}/Documents/GitHub/giovannini-finance/.run/run_finance_macros.sh'"
 end tell
 APPLESCRIPT
 

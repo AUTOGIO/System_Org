@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-APP="/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/PersonalLifeOS/lifeos"
+APP="${HOME}/Documents/GitHub/PersonalLifeOS/lifeos"
 
 if [[ ! -f "$APP/manage.py" ]]; then
   echo "Missing Django manage.py: $APP/manage.py"

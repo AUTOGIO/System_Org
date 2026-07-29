@@ -4,7 +4,7 @@
     {
       "id": "system_organizer",
       "name": "System Organizer",
-      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org 2",
+      "path": "$HOME/Documents/GitHub/System_Org 2",
       "role": "core_system",
       "validate_cmd": "swift build",
       "daily_cmd": "",
@@ -14,7 +14,7 @@
     {
       "id": "foks_bloomberg",
       "name": "FOKS Bloomberg",
-      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/FOKS_BLOOMBERG",
+      "path": "$HOME/Documents/GitHub/FOKS_BLOOMBERG",
       "role": "local_app",
       "validate_cmd": "scripts/validate.sh",
       "daily_cmd": "",
@@ -24,7 +24,7 @@
     {
       "id": "fulofilo_analytics",
       "name": "fulofilo-analytics",
-      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/fulofilo-analytics",
+      "path": "$HOME/Documents/GitHub/fulofilo-analytics",
       "role": "business_automation",
       "validate_cmd": "make automation-validate-data-integrity",
       "daily_cmd": "make automation-run-daily",
@@ -34,7 +34,7 @@
     {
       "id": "personallifeos",
       "name": "PersonalLifeOS",
-      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/PersonalLifeOS",
+      "path": "$HOME/Documents/GitHub/PersonalLifeOS",
       "role": "personal_system",
       "validate_cmd": "xcodebuild -project LifeOS.xcodeproj -scheme LifeOS build -quiet",
       "daily_cmd": "",
@@ -44,9 +44,9 @@
     {
       "id": "home_automation",
       "name": "Apple Home Automation",
-      "path": "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Projects (Essential)/Homebridge_Project",
+      "path": "$HOME/Documents/GitHub/Homebridge_Project",
       "role": "home_infrastructure",
-      "validate_cmd": "launchctl list com.giovannini.homeassistant.native",
+      "validate_cmd": "test -d .",
       "daily_cmd": "",
       "daily_requires_env": "",
       "tags": ["homeassistant", "homekit", "apple-home", "tuya", "local-first", "always-on"]

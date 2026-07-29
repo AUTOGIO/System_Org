@@ -15,15 +15,15 @@ pgrep -x SystemOrganizer
 ## Daily Repo Checks
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_state_summary.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/repo_state_summary.sh
 ```
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/repo_health_check.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/repo_health_check.sh
 ```
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/project_safe_validation.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/project_safe_validation.sh
 ```
 
 ## App Automations
@@ -50,7 +50,7 @@ Project Safe Validation (Obsidian)
 ## Re-Deploy
 
 ```zsh
-/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org\ 2/scripts/SystemOrganizer/deploy_system_organizer.sh
+`$HOME/Documents/GitHub`/System_Org\ 2/scripts/SystemOrganizer/deploy_system_organizer.sh
 ```
 
 ## Optional Local Services

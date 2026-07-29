@@ -1,8 +1,8 @@
 #!/bin/zsh
 set -euo pipefail
 
-APP="/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/giovannini-finance/Personal_Tracker_macros"
-RUN_DIR="/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/giovannini-finance/.run"
+APP="${HOME}/Documents/GitHub/giovannini-finance/Personal_Tracker_macros"
+RUN_DIR="${HOME}/Documents/GitHub/giovannini-finance/.run"
 UVICORN="$APP/.venv/bin/uvicorn"
 
 mkdir -p "$RUN_DIR"

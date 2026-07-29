@@ -31,8 +31,8 @@ APP_SUPPORT = Path.home() / "Library" / "Application Support" / "SystemOrganizer
 AUTOMATIONS_FILE = APP_SUPPORT / "automations.json"
 SCRIPTS_ROOT = str(SCRIPT_DIR)
 OLD_SCRIPT_ROOTS = [
-    "/Users/giovannini_nuovo/Documents/Active_Projects/System_Org/scripts/SystemOrganizer",
-    "/Users/giovannini_nuovo/Library/Mobile Documents/com~apple~CloudDocs/Documents/GitHub/System_Org/scripts/SystemOrganizer",
+    str(Path.home() / "Documents/Active_Projects/System_Org/scripts/SystemOrganizer"),
+    str(Path.home() / "Documents/GitHub/System_Org/scripts/SystemOrganizer"),
 ]
 
 

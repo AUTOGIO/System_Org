@@ -73,7 +73,7 @@ def active_project_paths(projects: dict[str, Any]) -> set[str]:
     paths = set()
     for project in projects.get("projects", []):
         if isinstance(project, dict) and project.get("path"):
-            paths.add(os.path.abspath(os.path.expanduser(str(project["path"]))))
+            paths.add(os.path.abspath(os.path.expanduser(os.path.expandvars(str(project["path"])))))
     return paths
 
 
@@ -81,7 +81,7 @@ def project_by_path(projects: dict[str, Any]) -> dict[str, dict[str, Any]]:
     result = {}
     for project in projects.get("projects", []):
         if isinstance(project, dict) and project.get("path"):
-            path = os.path.abspath(os.path.expanduser(str(project["path"])))
+            path = os.path.abspath(os.path.expanduser(os.path.expandvars(str(project["path"]))))
             result[path] = project
     return result
 
@@ -133,7 +133,7 @@ def add(finding: list[dict[str, str]], severity: str, repo: str, message: str) -
 def check_repo(repo: dict[str, Any], projects_by_path: dict[str, dict[str, Any]]) -> list[dict[str, str]]:
     findings: list[dict[str, str]] = []
     name = str(repo.get("name") or "unknown")
-    path = Path(os.path.expanduser(str(repo.get("path") or "")))
+    path = Path(os.path.expanduser(os.path.expandvars(str(repo.get("path") or ""))))
     abs_path = os.path.abspath(str(path))
     active = bool(repo.get("active_project"))
     group = str(repo.get("group") or "unknown")
@@ -219,7 +219,7 @@ def main() -> int:
     for repo in inventory.get("repos", []):
         if not isinstance(repo, dict):
             continue
-        path = os.path.abspath(os.path.expanduser(str(repo.get("path") or "")))
+        path = os.path.abspath(os.path.expanduser(os.path.expandvars(str(repo.get("path") or ""))))
         inventory_paths.add(path)
         findings.extend(check_repo(repo, projects_by_path))
 
